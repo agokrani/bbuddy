@@ -55,20 +55,32 @@ class GenrativeCheckIn:
     def get_response(self, feeling=None, reason_entity=None, reason=None):
         return self.chain.run(feeling=feeling, reason_entity=reason_entity, reason=reason)
 
-    #def _generate_check_in_summary(self, feeling=None, reason_entity=None, reason=None, responses=None):
-    #    message_1 = "I am feeling " + feeling + "about " + reason_entity
-    #    messages = [
-    #        HumanMessage(content=message_1),
-    #        HumanMessage(content=reason),
-    #        AIMessage(content=responses)
-    #    ]
-    #    summarizer = SummarizerMixin(llm=OpenAI(temperature=0))
-    #    print(summarizer.predict_new_summary(messages, ""))
+    """def _generate_check_in_summary(self, feeling=None, reason_entity=None, reason=None, responses=None):
+        message_1 = "I am feeling " + feeling + "about " + reason_entity
+        messages = [
+            HumanMessage(content=message_1),
+            HumanMessage(content=reason),
+            AIMessage(content=responses)
+        ]
+        summarizer = SummarizerMixin(llm=OpenAI(temperature=0))
+        print(summarizer.predict_new_summary(messages, ""))"""
 
     def store(self, feeling_message, reason, ai_response, session_id, postgres_connection): 
         history = PostgresChatMessageHistory(
             connection_string=postgres_connection,
             session_id = session_id)
-        history.add_user_message(feeling_message)
-        history.add_user_message(reason)
+        
+        history.add_user_message(feeling_message + reason)
         history.add_ai_message(ai_response)
+
+    def count_check_in(self, session_id, postgres_connection):
+        history = PostgresChatMessageHistory(
+            connection_string=postgres_connection,
+            session_id = session_id)
+        
+        count = sum([isinstance(message, HumanMessage) for message in history.messages])
+        
+        if count < 3: 
+            return 3-count
+        
+        return count  

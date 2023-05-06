@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from checkin import GenrativeCheckIn
+from reflections import reflections
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -22,6 +23,7 @@ app.add_middleware(
 
 
 generative_check_in = GenrativeCheckIn()
+reflection = reflections()
 postgres_connection = "postgresql://bijmbrqw:xnnbF7f-i_X-9uPRnUreaOOJFS-d9oWt@dumbo.db.elephantsql.com/bijmbrqw"
 
 @app.post("/mood_check_in")
@@ -44,3 +46,12 @@ async def store_mood_check_in(data: dict):
         session_id=data['session_id'],
         postgres_connection=postgres_connection        
     )
+
+@app.get("/count_mood_check_in")
+async def count_mood_check_in(session_id: str): 
+    return generative_check_in.count_check_in(session_id, postgres_connection)
+
+
+@app.get("/reflection_topics")
+async def get_topics_of_reflection(session_id: str): 
+    return reflection.get_topics_of_reflection(session_id, postgres_connection)
