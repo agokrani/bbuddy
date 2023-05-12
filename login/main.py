@@ -3,15 +3,15 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import psycopg2
+import psycopg
 import jwt
 
 SECRET_KEY = "mysecretkey"
 ALGORITHM = "HS256"
 
 
-DATABASE_URL = "postgresql://username:password@localhost/dbname"
-#DATABASE_URL = "postgres://bijmbrqw:xnnbF7f-i_X-9uPRnUreaOOJFS-d9oWt@dumbo.db.elephantsql.com/bijmbrqw"
+#DATABASE_URL = "postgresql://username:password@localhost/dbname"
+DATABASE_URL = "postgres://bijmbrqw:xnnbF7f-i_X-9uPRnUreaOOJFS-d9oWt@dumbo.db.elephantsql.com/bijmbrqw"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
