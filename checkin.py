@@ -55,16 +55,6 @@ class GenrativeCheckIn:
     def get_response(self, feeling=None, reason_entity=None, reason=None):
         return self.chain.run(feeling=feeling, reason_entity=reason_entity, reason=reason)
 
-    """def _generate_check_in_summary(self, feeling=None, reason_entity=None, reason=None, responses=None):
-        message_1 = "I am feeling " + feeling + "about " + reason_entity
-        messages = [
-            HumanMessage(content=message_1),
-            HumanMessage(content=reason),
-            AIMessage(content=responses)
-        ]
-        summarizer = SummarizerMixin(llm=OpenAI(temperature=0))
-        print(summarizer.predict_new_summary(messages, ""))"""
-
     def store(self, feeling_message, reason, ai_response, session_id, postgres_connection): 
         history = PostgresChatMessageHistory(
             connection_string=postgres_connection,
