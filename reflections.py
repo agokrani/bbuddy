@@ -32,8 +32,8 @@ class MoodReflectionAgent:
     def get_heading(self, topics): 
         prompt = PromptTemplate.from_template(
             "{topics}\n\n"
-            + "From the statement above, generate a heading for the reflection post\n"
-            + "Output should be around 10 words max\n\n"
+            + "From the statement above, generate a title for the reflection post\n"
+            + "Output should be around 4 words max\n\n"
             + "Output format JSON with \"heading\" key"
         )
 
