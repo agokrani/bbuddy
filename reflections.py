@@ -19,8 +19,8 @@ from langchain.schema import (
     SystemMessage
 )
 from langchain.memory import PostgresChatMessageHistory
-from memory.reflection import ReflectionHistory
-from schema import AIInsight, HumanInsight, ReflectionPerTopic
+from db.reflection_history_manager import ReflectionHistoryManager
+from schema.reflection import AIInsight, HumanInsight, ReflectionPerTopic
 
 class MoodReflectionAgent: 
     llm = OpenAI(temperature=0)
@@ -106,17 +106,15 @@ class MoodReflectionAgent:
         
         return reflections
             
-    def store_reflection(self, reflection_to_add: List[ReflectionPerTopic], session_id, postgres_connection): 
-        history = ReflectionHistory(
-            session_id = session_id,
-            connection_string = postgres_connection
+    def store_reflection(self, db, session_id, reflection_to_add: List[ReflectionPerTopic]): 
+        history = ReflectionHistoryManager(
+            session_id = session_id
         )
 
-        history.add_reflection(reflection_to_add)
+        history.add_reflection(db, reflection_to_add)
 
-    def get_reflection_history(self, session_id, postgres_connection):
-        history = ReflectionHistory(
-            session_id = session_id,
-            connection_string = postgres_connection 
+    def get_reflection_history(self, db, session_id: str):
+        history = ReflectionHistoryManager(
+            session_id = session_id
         )
-        return history.reflection_history
+        return history.reflection_history(db)

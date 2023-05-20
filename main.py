@@ -1,11 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from checkin import GenrativeCheckIn
 from reflections import MoodReflectionAgent
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
-from schema import ReflectionPerTopic, Reflection
+from schema.reflection import ReflectionPerTopic, Reflection
+from endpoints import login
+from deps import get_db, connection_string
 
 app = FastAPI()
+
+app.include_router(login.router)
+
 
 # Add CORS middleware
 origins = [
@@ -26,7 +31,6 @@ app.add_middleware(
 
 generative_check_in = GenrativeCheckIn()
 reflection_agent = MoodReflectionAgent()
-postgres_connection = "postgresql://bijmbrqw:xnnbF7f-i_X-9uPRnUreaOOJFS-d9oWt@dumbo.db.elephantsql.com/bijmbrqw"
 
 @app.post("/mood_check_in")
 async def mood_check_in(data: dict):
@@ -40,44 +44,43 @@ async def mood_check_in(data: dict):
     }
 
 @app.post("/store_mood_check_in")
-async def store_mood_check_in(data: dict): 
+async def store_mood_check_in(data: dict, currentUser = Depends(login.get_current_user)):
     generative_check_in.store(
         feeling_message=data['feeling_message'], 
         reason=data['reason'], 
         ai_response=data['ai_response'], 
-        session_id=data['session_id'],
-        postgres_connection=postgres_connection        
+        session_id=str(currentUser.id),
+        postgres_connection=connection_string       
     )
 
 @app.get("/count_mood_check_in")
-async def count_mood_check_in(session_id: str): 
-    return generative_check_in.count_check_in(session_id, postgres_connection)
+async def count_mood_check_in(currentUser = Depends(login.get_current_user)): 
+    return generative_check_in.count_check_in(str(currentUser.id), connection_string)
 
 
 @app.get("/reflection_topics")
-async def get_topics_of_reflection(session_id: str): 
-    return reflection_agent.get_topics_of_reflection(session_id, postgres_connection)
+async def get_topics_of_reflection(currentUser = Depends(login.get_current_user)): 
+    return reflection_agent.get_topics_of_reflection(str(currentUser.id), connection_string)
 
 @app.post("/reflection_heading")
 async def get_reflection_heading(data: dict): 
-    print(data['topics'])
     return reflection_agent.get_heading(topics=data['topics'])
 
 @app.post("/mood_reflection")
-async def mood_reflection(data: dict, response_model=Reflection): 
-    reflection_per_topic = reflection_agent.reflect(topics=data['topics'], session_id=str(data['session_id']), postgres_connection=postgres_connection)
-    print("heading: ", data['heading'])
+async def mood_reflection(data: dict, db = Depends(get_db), currentUser = Depends(login.get_current_user), response_model=Reflection): 
+    reflection_per_topic = reflection_agent.reflect(topics=data['topics'], session_id=str(currentUser.id), postgres_connection=connection_string)
+    # print("heading: ", data['heading'])
     if data['heading'] == '' or data['heading'] == None: 
         data['heading'] = reflection_agent.get_heading(data['topics'])['heading']
     generated_reflection = Reflection(
         heading=data['heading'],
         topic_reflections = reflection_per_topic
     )
-    reflection_agent.store_reflection(generated_reflection, session_id=str(data['session_id']), postgres_connection=postgres_connection)
+    reflection_agent.store_reflection(db=db, session_id=str(currentUser.id), reflection_to_add=generated_reflection)
     return generated_reflection
 
 
 @app.get("/reflection_history", response_model=List[Reflection])
-async def get_reflection_history(session_id: str): 
-    history = reflection_agent.get_reflection_history(session_id, postgres_connection)
+async def get_reflection_history(db = Depends(get_db), currentUser = Depends(login.get_current_user)):
+    history = reflection_agent.get_reflection_history(db, str(currentUser.id))
     return history

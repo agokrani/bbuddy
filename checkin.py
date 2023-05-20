@@ -69,8 +69,8 @@ class GenrativeCheckIn:
             session_id = session_id)
         
         count = sum([isinstance(message, HumanMessage) for message in history.messages])
-        
+        print(count)
         if count < 3: 
-            return 3-count
-        
+            return 3-count if count > 0 else 0
+            
         return count  
