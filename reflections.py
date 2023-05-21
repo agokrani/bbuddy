@@ -73,16 +73,26 @@ class MoodReflectionAgent:
 
     def _get_insights_on_topic(self, topic, session_id, postgres_connection, user_reflection='', last_k = 3): 
         related_statements = self._get_mood_observations(session_id, postgres_connection)
-        
-        prompt = PromptTemplate.from_template(
-            "Statements about {topic}\n"
-            + "{related_statements}\n\n"
-            + "What are the 2 most high-level insights can you infer from the above statements?\n\n"
-            + "Each insight should use second-person point of view tone\n\n"
-            + "Pay extra attention to politeness \n\n"
-            + "Output Format: JSON with key \"insights\" containing list of insights"
-        )
-        response = self.chain(prompt).run(topic=topic, related_statements=related_statements)
+        if (user_reflection is not None) or (user_reflection != ''):
+            prompt = PromptTemplate.from_template(
+                "Statements about {topic}\n"
+                + "{user_reflection}\n"
+                + "{related_statements}\n\n"
+                + "What are the 2 most high-level insights can you infer from the above statements?\n\n"
+                + "Each insight should use second-person point of view tone\n\n"
+                + "Pay extra attention to politeness \n\n"
+                + "Output Format: JSON with key \"insights\" containing list of insights"
+            )
+        else: 
+            prompt = PromptTemplate.from_template(
+                "Statements about {topic}\n"
+                + "{related_statements}\n\n"
+                + "What are the 2 most high-level insights can you infer from the above statements?\n\n"
+                + "Each insight should use second-person point of view tone\n\n"
+                + "Pay extra attention to politeness \n\n"
+                + "Output Format: JSON with key \"insights\" containing list of insights"
+            )
+        response = self.chain(prompt).run(topic=topic, related_statements=related_statements, user_reflection=user_reflection)
         
         response_json = json.loads(response)
         
@@ -98,11 +108,11 @@ class MoodReflectionAgent:
         
         return topic_reflection
 
-    def reflect(self, topics, session_id, postgres_connection, last_k = 3):
+    def reflect(self, topics, user_reflections, session_id, postgres_connection, last_k = 3):
         reflections = []
         
-        for topic in topics: 
-            reflections.append(self._get_insights_on_topic(topic, session_id, postgres_connection))
+        for topic, user_reflection in zip(topics, user_reflections): 
+            reflections.append(self._get_insights_on_topic(topic, session_id, postgres_connection, user_reflection))
         
         return reflections
             

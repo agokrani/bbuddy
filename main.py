@@ -37,7 +37,8 @@ async def mood_check_in(data: dict):
     """ Get the response from model for daily check in """
     return {"message": 
         generative_check_in.get_response(
-            feeling=data['feeling'], 
+            feeling=data['feeling'],
+            feeling_form=data['feeling_form'],
             reason_entity=data['reason_entity'], 
             reason=data['reason']
         )
@@ -68,7 +69,7 @@ async def get_reflection_heading(data: dict):
 
 @app.post("/mood_reflection")
 async def mood_reflection(data: dict, db = Depends(get_db), currentUser = Depends(login.get_current_user), response_model=Reflection): 
-    reflection_per_topic = reflection_agent.reflect(topics=data['topics'], session_id=str(currentUser.id), postgres_connection=connection_string)
+    reflection_per_topic = reflection_agent.reflect(topics=data['topics'], user_reflections=data['user_reflections'], session_id=str(currentUser.id), postgres_connection=connection_string)
     # print("heading: ", data['heading'])
     if data['heading'] == '' or data['heading'] == None: 
         data['heading'] = reflection_agent.get_heading(data['topics'])['heading']

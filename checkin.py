@@ -40,7 +40,7 @@ class GenrativeCheckIn:
     """
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
     
-    human_template="I am feeling {feeling} about {reason_entity}"
+    human_template="I am feeling {feeling} and {feeling_form} about my {reason_entity}"
     
     human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
     
@@ -52,8 +52,8 @@ class GenrativeCheckIn:
 
     chain = LLMChain(llm=chat, prompt=chat_prompt, verbose=True)
     
-    def get_response(self, feeling=None, reason_entity=None, reason=None):
-        return self.chain.run(feeling=feeling, reason_entity=reason_entity, reason=reason)
+    def get_response(self, feeling=None, feeling_form=None, reason_entity=None, reason=None):
+        return self.chain.run(feeling=feeling, feeling_form=feeling_form, reason_entity=reason_entity, reason=reason)
 
     def store(self, feeling_message, reason, ai_response, session_id, postgres_connection): 
         history = PostgresChatMessageHistory(
@@ -69,7 +69,6 @@ class GenrativeCheckIn:
             session_id = session_id)
         
         count = sum([isinstance(message, HumanMessage) for message in history.messages])
-        print(count)
         if count < 3: 
             return 3-count if count > 0 else 0
             
