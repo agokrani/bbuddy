@@ -128,3 +128,8 @@ class MoodReflectionAgent:
             session_id = session_id
         )
         return history.reflection_history(db)
+
+    def count_reflections(self, db, session_id: str): 
+        history = self.get_reflection_history(db, session_id)
+        
+        return len(history)

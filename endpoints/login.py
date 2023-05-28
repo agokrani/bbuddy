@@ -100,31 +100,58 @@ async def login_for_access_token(db = Depends(get_db), form_data: OAuth2Password
     return {"access_token": access_token, "refresh_token": refresh_token}
 
 @router.post("/login/refresh-token", response_model=Token)
-async def refresh_access_token(db = Depends(get_db), token: str = Depends(oauth2_scheme)):
+async def refresh_access_token(data: dict, db = Depends(get_db)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        refresh_token = payload.get("refresh_token")
-        if refresh_token is None:
+        if data['token'] is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-        try:
-            refresh_token_data = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        except jwt.ExpiredSignatureError:
-            raise HTTPException(status_code=401, detail="Refresh token has expired")
         
-        username: str = refresh_token_data.get("sub")
+        refresh_token = jwt.decode(data['token'], SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = refresh_token.get("sub")
+        
         if username is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
         user = user_manager.get_user_by_username(db, username)
         if user is None:
             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        
+        access_token_expires = timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
         access_token = create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
-        return {"access_token": access_token, "token_type": "Bearer"}
+        return access_token
     
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+        
+# async def refresh_access_token(db = Depends(get_db), token: str = Depends(oauth2_scheme)):
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         refresh_token = payload.get("refresh_token")
+#         print(refresh_token)
+#         print(token)
+#         import pdb;pdb.set_trace()
+#         if refresh_token is None:
+#             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+#         try:
+#             refresh_token_data = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+#         except jwt.ExpiredSignatureError:
+#             raise HTTPException(status_code=401, detail="Refresh token has expired")
+        
+#         username: str = refresh_token_data.get("sub")
+#         if username is None:
+#             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+#         user = user_manager.get_user_by_username(db, username)
+#         if user is None:
+#             raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+#         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+#         access_token = create_access_token(
+#             data={"sub": user.username}, expires_delta=access_token_expires
+#         )
+#         return {"access_token": access_token, "token_type": "Bearer"}
+    
+#     except JWTError:
+#         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
 @router.get("/users/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)):
