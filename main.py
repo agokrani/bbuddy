@@ -87,8 +87,8 @@ async def mood_reflection(data: dict, db = Depends(get_db), currentUser = Depend
 
 
 @app.get("/reflection_history", response_model=List[Reflection])
-async def get_reflection_history(db = Depends(get_db), currentUser = Depends(login.get_current_user)):
-    history = reflection_agent.get_reflection_history(db, str(currentUser.id))
+async def get_reflection_history(start_date = None, end_date = None, db = Depends(get_db), currentUser = Depends(login.get_current_user)):
+    history = reflection_agent.get_reflection_history(db, str(currentUser.id), start_date=start_date, end_date=end_date)
     return history
 
 @app.get("/goal_history", response_model=List[Goal])
@@ -96,7 +96,9 @@ async def get_goal_history(db = Depends(get_db), currentUser = Depends(login.get
     history = goal_agent.get_goal_history(db, str(currentUser.id))
     return history
 
-@app.get("/set_new_goal")
-async def set_new_goal(db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
-    new_goal = goal_agent.set_new_goal(db, str(currentUser.id), reflection_agent)
+@app.get("/set_new_goal", response_model=Goal)
+async def set_new_goal(start_date = None, end_date = None, db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
+    new_goal = goal_agent.set_new_goal(db, str(currentUser.id), reflection_agent, start_date = start_date, end_date = end_date)
     goal_agent.store_goal(db=db, session_id=str(currentUser.id), goal_to_add=new_goal)
+    
+    return new_goal

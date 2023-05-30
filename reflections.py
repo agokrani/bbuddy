@@ -123,11 +123,11 @@ class MoodReflectionAgent:
 
         history.add_reflection(db, reflection_to_add)
 
-    def get_reflection_history(self, db, session_id: str):
+    def get_reflection_history(self, db, session_id: str, start_date=None, end_date=None):
         history = ReflectionHistoryManager(
             session_id = session_id
         )
-        return history.reflection_history(db)
+        return history.reflection_history(db, start_date=start_date, end_date=end_date)
 
     def count_reflections(self, db, session_id: str): 
         history = self.get_reflection_history(db, session_id)

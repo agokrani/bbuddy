@@ -36,8 +36,8 @@ class GoalAgent:
         )
         return history.goal_history(db)
     
-    def get_reflection_observations(self, db, session_id: str, reflection_agent, last_k=3): 
-        reflection_history = reflection_agent.get_reflection_history(db=db, session_id=session_id)
+    def get_reflection_observations(self, db, session_id: str, reflection_agent, start_date=None, end_date=None, last_k=3): 
+        reflection_history = reflection_agent.get_reflection_history(db=db, session_id=session_id, start_date=start_date, end_date=end_date)
         
         if len(reflection_history) >= 3:
             reflection_history = reflection_history[:last_k]
@@ -54,14 +54,14 @@ class GoalAgent:
         
         return reflection_observations
 
-    def set_new_goal(self, db, session_id:str, reflection_agent): 
-        reflections_observations = ""
-        goals_history = self.get_goal_history(db, session_id)
-        if goals_history: 
+    def set_new_goal(self, db, session_id:str, reflection_agent, start_date=None, end_date=None): 
+        #reflections_observations = ""
+        #goals_history = self.get_goal_history(db, session_id)
+        #if goals_history: 
             ## need to add more code here
-            return
-        else: 
-            reflection_observations = self.get_reflection_observations(db, session_id, reflection_agent)
+        #    return
+        #else: 
+        reflection_observations = self.get_reflection_observations(db, session_id, reflection_agent, start_date=start_date, end_date=end_date)
         
         goal_generation_prompt = PromptTemplate.from_template(
             "{observations}\n\n\n\n"
