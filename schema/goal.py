@@ -13,16 +13,36 @@ class Goal(BaseModel):
     description: str
     milestones: List[Milestone]
 
+class GoalInDB(Goal):
+    id: int
+
 def goal_to_dict(goal):
     return {"description": goal.description, "milestones": [m.to_dict() for m in goal.milestones]}
 
+# def goal_from_dict(goal_dict):
+#     gid = goal_dict.get("id")
+#     create_time = goal_dict.get("create_time")  # Get the value of "create_time" from the dictionary
+#     g = goal_dict.get("goal")
+#     if create_time is not None:
+#         return Goal(create_time=create_time, description=g["description"], milestones=g["milestones"])
+#     else:
+#         return Goal(description=g["description"], milestones=g["milestones"])
+
 def goal_from_dict(goal_dict):
-    create_time = goal_dict.get("create_time")  # Get the value of "create_time" from the dictionary
+    gid = goal_dict.get("id")
+    create_time = goal_dict.get("create_time")
     g = goal_dict.get("goal")
-    if create_time is not None:
-        return Goal(create_time=create_time, description=g["description"], milestones=g["milestones"])
+    
+    if gid is not None:
+        if create_time is not None:
+            return GoalInDB(id=gid, create_time=create_time, description=g["description"], milestones=g["milestones"])
+        else:
+            return GoalInDB(id=gid, description=g["description"], milestones=g["milestones"])
     else:
-        return Goal(description=g["description"], milestones=g["milestones"])
+        if create_time is not None:
+            return Goal(create_time=create_time, description=g["description"], milestones=g["milestones"])
+        else:
+            return Goal(description=g["description"], milestones=g["milestones"])
 
 def goals_from_dict(goals): 
     return [goal_from_dict(g) for g in goals]

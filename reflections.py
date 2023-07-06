@@ -3,8 +3,8 @@ from typing import List
 from langchain.llms import OpenAI
 from langchain import LLMChain
 from langchain.chat_models import ChatOpenAI
-from langchain.callbacks.base import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+#from langchain.callbacks.base import CallbackManager
+#from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import (
     ChatPromptTemplate,
     PromptTemplate,

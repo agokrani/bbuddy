@@ -1,4 +1,3 @@
-from db.manager import DatabaseManager
 from schema.user import User, UserInDB
 
 class UserManager: 

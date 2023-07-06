@@ -1,7 +1,7 @@
 from langchain.llms import OpenAI
 from langchain import LLMChain
 from langchain.chat_models import ChatOpenAI
-from langchain.callbacks.base import CallbackManager
+#from langchain.callbacks.base import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import (
     ChatPromptTemplate,
@@ -17,11 +17,13 @@ from langchain.schema import (
     SystemMessage
 )
 from langchain.memory import PostgresChatMessageHistory
+from langchain.schema import messages_to_dict
 
 class GenrativeCheckIn: 
 
-    chat = ChatOpenAI(streaming=True, callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]), verbose=True, temperature=0)
-
+    #chat = ChatOpenAI(streaming=True, callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]), verbose=True, temperature=0)
+    chat = ChatOpenAI(streaming=True, callbacks=[StreamingStdOutCallbackHandler()], verbose=True, temperature=0)
+    
     system_template="""Assistant is a large language model built on top of Open AI API's by Bbuddy.ai
 
     Assistant is very power emotionally intelligent friend that knows about wide variety of Congnitive behavioral therapy (CBT) techniques which allows the assistant to provide 
@@ -73,3 +75,13 @@ class GenrativeCheckIn:
             return 3-count if count > 0 else 0
             
         return count  
+
+    def get_check_in_history(self, session_id, postgres_connection, last_k=None):  
+        history = PostgresChatMessageHistory(
+            connection_string=postgres_connection,
+            session_id = session_id
+        )
+        
+        return messages_to_dict(history.messages)[-int(last_k)*2:]
+    
+

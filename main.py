@@ -6,13 +6,16 @@ from typing import List
 from schema.reflection import ReflectionPerTopic, Reflection
 from endpoints import login
 from deps import get_db, connection_string
-from schema.goal import Goal
+from schema.goal import Goal, GoalInDB
 from goals import GoalAgent
+from endpoints import goal_chat
+from db.stats_manager import stats_manager
+from schema.stats import UserStats, user_stat_from_dict
 
 app = FastAPI()
 
 app.include_router(login.router)
-
+app.include_router(goal_chat.langchain_router)
 
 # Add CORS middleware
 origins = [
@@ -56,6 +59,9 @@ async def store_mood_check_in(data: dict, currentUser = Depends(login.get_curren
         session_id=str(currentUser.id),
         postgres_connection=connection_string       
     )
+@app.get("/mood_check_in_history")
+async def mood_check_in_history(last_k = None, currentUser = Depends(login.get_current_user)): 
+    return generative_check_in.get_check_in_history(str(currentUser.id), connection_string, last_k)
 
 @app.get("/count_mood_check_in")
 async def count_mood_check_in(currentUser = Depends(login.get_current_user)): 
@@ -91,7 +97,7 @@ async def get_reflection_history(start_date = None, end_date = None, db = Depend
     history = reflection_agent.get_reflection_history(db, str(currentUser.id), start_date=start_date, end_date=end_date)
     return history
 
-@app.get("/goal_history", response_model=List[Goal])
+@app.get("/goal_history", response_model=List[GoalInDB])
 async def get_goal_history(db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
     history = goal_agent.get_goal_history(db, str(currentUser.id))
     return history
@@ -102,3 +108,13 @@ async def set_new_goal(start_date = None, end_date = None, db = Depends(get_db),
     goal_agent.store_goal(db=db, session_id=str(currentUser.id), goal_to_add=new_goal)
     
     return new_goal
+
+
+@app.get("/counter_stats", response_model=List[UserStats]) 
+async def get_counter_stats(db=Depends(get_db), currentUser = Depends(login.get_current_user)): 
+    return stats_manager.get_counters(db, currentUser.id)
+
+@app.post("/update_stats")
+async def update_stats(data: dict, db=Depends(get_db), currentUser = Depends(login.get_current_user)): 
+    #print()
+    stats_manager.update_stats(user_stat_from_dict(data), db, currentUser.id)

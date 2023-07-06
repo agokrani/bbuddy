@@ -3,8 +3,8 @@ from typing import List
 from langchain.llms import OpenAI
 from langchain import LLMChain
 from langchain.chat_models import ChatOpenAI
-from langchain.callbacks.base import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+#from langchain.callbacks.base import CallbackManager
+#from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import (
     ChatPromptTemplate,
     PromptTemplate,
@@ -54,13 +54,7 @@ class GoalAgent:
         
         return reflection_observations
 
-    def set_new_goal(self, db, session_id:str, reflection_agent, start_date=None, end_date=None): 
-        #reflections_observations = ""
-        #goals_history = self.get_goal_history(db, session_id)
-        #if goals_history: 
-            ## need to add more code here
-        #    return
-        #else: 
+    def set_new_goal(self, db, session_id:str, reflection_agent, start_date=None, end_date=None):
         reflection_observations = self.get_reflection_observations(db, session_id, reflection_agent, start_date=start_date, end_date=end_date)
         
         goal_generation_prompt = PromptTemplate.from_template(
@@ -93,3 +87,44 @@ class GoalAgent:
             session_id = session_id
         )
         history.add_goal(db, goal_to_add)
+
+
+
+
+# class CustomPromptTemplate(BaseChatPromptTemplate):
+#     # The template to use
+#     template: str
+#     # The list of tools available
+#     tools: List[Tool]
+#     goal: Goal
+
+#     def format_messages(self, **kwargs) -> str:
+#         # Get the intermediate steps (AgentAction, Observation tuples)
+        
+#         # Format them in a particular way
+#         intermediate_steps = kwargs.pop("intermediate_steps")
+#         thoughts = ""
+#         for action, observation in intermediate_steps:
+#             thoughts += action.log
+#             thoughts += f"\nObservation: {observation}\nThought: "
+        
+#         # Set the agent_scratchpad variable to that value
+#         kwargs["agent_scratchpad"] = thoughts
+        
+#        # Create a tools variable from the list of tools provided
+#        kwargs["tools"] = "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools])
+#        
+#        # Create a list of tool names for the tools provided
+#        kwargs["tool_names"] = ", ".join([tool.name for tool in self.tools])
+#        
+#        kwargs["goal"] = self.goal.description
+#        kwargs["milestones"] = ", ".join([milestone.content for milestone in self.goal.milestones])
+#
+#        formatted = self.template.format(**kwargs)
+#        
+#        return [HumanMessage(content=formatted)]
+
+#class GoalChatAgent: 
+#    llm = OpenAI(temperature=0)
+#    verbose = True
+

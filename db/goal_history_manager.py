@@ -5,7 +5,7 @@ from db.manager import DatabaseManager
 import psycopg
 from psycopg import sql
 from psycopg.rows import dict_row
-from schema.goal import Goal, goals_from_dict, goal_to_dict
+from schema.goal import Goal, goals_from_dict, goal_to_dict, goal_from_dict
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class GoalHistoryManager:
 
     def goal_history(self, db):
         cursor = db.cursor(row_factory=dict_row) 
-        query = f"SELECT goal, create_time FROM {self.table_name} where session_id = %s order by create_time desc;"
+        query = f"SELECT id, goal, create_time FROM {self.table_name} where session_id = %s order by create_time desc;"
         cursor.execute(query, (self.session_id,))
         
         goal_history = goals_from_dict(cursor.fetchall())
@@ -54,3 +54,13 @@ class GoalHistoryManager:
             query, (self.session_id, json.dumps(goal_to_dict(goal_to_add)))
         )
         db.commit()
+
+    @classmethod
+    def get_goal_by_id(cls, db, id:int): 
+        cursor = db.cursor(row_factory=dict_row) 
+        query = f"SELECT id, goal, create_time FROM goal_store where id = %s;"
+        cursor.execute(query, (id,))
+        
+        goal = goal_from_dict(cursor.fetchone())
+        
+        return goal
