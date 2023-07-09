@@ -32,7 +32,7 @@ class CustomAsyncAgentsWebsocketCallback(
             message = self._construct_message(token)
             await self.websocket.send_json(message)
     
-    async def on_agent_finish(self, finish: AgentFinish, **kwargs) -> None:
-        print(self.agent.__dict__);
-        message = {**self.response.dict(), **{"message": finish.return_values["output"], "message_type": MessageType.INFO}}
-        await self.websocket.send_json(message)
+    # async def on_agent_finish(self, finish: AgentFinish, **kwargs) -> None:
+    #     print(self.agent.__dict__);
+    #     message = {**self.response.dict(), **{"message": finish.return_values["output"], "message_type": MessageType.INFO}}
+    #     await self.websocket.send_json(message)

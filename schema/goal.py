@@ -19,15 +19,6 @@ class GoalInDB(Goal):
 def goal_to_dict(goal):
     return {"description": goal.description, "milestones": [m.to_dict() for m in goal.milestones]}
 
-# def goal_from_dict(goal_dict):
-#     gid = goal_dict.get("id")
-#     create_time = goal_dict.get("create_time")  # Get the value of "create_time" from the dictionary
-#     g = goal_dict.get("goal")
-#     if create_time is not None:
-#         return Goal(create_time=create_time, description=g["description"], milestones=g["milestones"])
-#     else:
-#         return Goal(description=g["description"], milestones=g["milestones"])
-
 def goal_from_dict(goal_dict):
     gid = goal_dict.get("id")
     create_time = goal_dict.get("create_time")

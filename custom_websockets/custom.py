@@ -25,6 +25,7 @@ class CustomWebsocketConnection(WebsocketConnection):
         while True:
             try:
                 user_message = await self.websocket.receive_text()
+                print(user_message)
                 await self.websocket.send_json(
                     WebsocketResponse(
                         sender=Sender.HUMAN,

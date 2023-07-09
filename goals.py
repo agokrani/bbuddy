@@ -1,25 +1,11 @@
 import json 
-from typing import List
 from langchain.llms import OpenAI
 from langchain import LLMChain
-from langchain.chat_models import ChatOpenAI
 #from langchain.callbacks.base import CallbackManager
 #from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import (
-    ChatPromptTemplate,
     PromptTemplate,
-    SystemMessagePromptTemplate,
-    AIMessagePromptTemplate,
-    HumanMessagePromptTemplate,
 )
-from langchain.memory.summary import SummarizerMixin
-from langchain.schema import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage
-)
-from langchain.memory import PostgresChatMessageHistory
-from db.reflection_history_manager import ReflectionHistoryManager
 from schema.goal import Milestone, Goal
 from db.goal_history_manager import GoalHistoryManager
 
@@ -88,43 +74,8 @@ class GoalAgent:
         )
         history.add_goal(db, goal_to_add)
 
-
-
-
-# class CustomPromptTemplate(BaseChatPromptTemplate):
-#     # The template to use
-#     template: str
-#     # The list of tools available
-#     tools: List[Tool]
-#     goal: Goal
-
-#     def format_messages(self, **kwargs) -> str:
-#         # Get the intermediate steps (AgentAction, Observation tuples)
-        
-#         # Format them in a particular way
-#         intermediate_steps = kwargs.pop("intermediate_steps")
-#         thoughts = ""
-#         for action, observation in intermediate_steps:
-#             thoughts += action.log
-#             thoughts += f"\nObservation: {observation}\nThought: "
-        
-#         # Set the agent_scratchpad variable to that value
-#         kwargs["agent_scratchpad"] = thoughts
-        
-#        # Create a tools variable from the list of tools provided
-#        kwargs["tools"] = "\n".join([f"{tool.name}: {tool.description}" for tool in self.tools])
-#        
-#        # Create a list of tool names for the tools provided
-#        kwargs["tool_names"] = ", ".join([tool.name for tool in self.tools])
-#        
-#        kwargs["goal"] = self.goal.description
-#        kwargs["milestones"] = ", ".join([milestone.content for milestone in self.goal.milestones])
-#
-#        formatted = self.template.format(**kwargs)
-#        
-#        return [HumanMessage(content=formatted)]
-
-#class GoalChatAgent: 
-#    llm = OpenAI(temperature=0)
-#    verbose = True
-
+    def update_goal(self, db, session_id: str, goal_to_update):
+        history = GoalHistoryManager(
+            session_id = session_id
+        )
+        history.update_goal(db, goal_to_update)

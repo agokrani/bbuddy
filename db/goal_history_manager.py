@@ -64,3 +64,12 @@ class GoalHistoryManager:
         goal = goal_from_dict(cursor.fetchone())
         
         return goal
+    
+
+    def update_goal(self, db, goal_to_update): 
+        cursor = db.cursor()
+        query = f"UPDATE {self.table_name} SET goal = %s WHERE  id = %s;"
+        cursor.execute(query, (json.dumps({"description": goal_to_update["description"], "milestones": goal_to_update["milestones"]}), 
+                               goal_to_update["id"],))
+        
+        db.commit() 

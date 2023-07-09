@@ -14,48 +14,48 @@ class GoalConvoOutputParser(AgentOutputParser):
     ai_prefix: str = "Final Answer"
 
 
-    def parse_to_json(self, text):
-        text = text.split(f"{self.ai_prefix}:")[-1].strip()
+    # def parse_to_json(self, text):
+    #     text = text.split(f"{self.ai_prefix}:")[-1].strip()
         
-        lines = text.split('\n')  # split the text into lines
-        json_array = []
-        prefix_end = False
-        is_sublist = False
-        prefix = ""
-        suffix = ""
+    #     lines = text.split('\n')  # split the text into lines
+    #     json_array = []
+    #     prefix_end = False
+    #     is_sublist = False
+    #     prefix = ""
+    #     suffix = ""
         
-        for line in lines:
-            stripped_line = line.strip()  # remove leading/trailing white spaces
-            if stripped_line:  # if the line is not empty
-                if stripped_line[0].isdigit():  # if the line starts with a digit
-                    is_sublist = True
-                    prefix_end  = True
-                    json_obj = {"content": stripped_line.split('. ', 1)[1], "tasks": []}  # create a new json object with the title
-                    json_array.append(json_obj)  # append the new json object to the json array
-                elif stripped_line[0] == '-':  # if the line starts with a '-'
-                    prefix_end  = True
-                    if is_sublist: 
-                        json_obj = {"content": stripped_line[2:], "tasks": []}
-                        json_array[-1]["tasks"].append(json_obj)  # append the step to the last json object in the json array
-                    else: 
-                        json_obj = {"content": stripped_line[2:], "tasks": []}
-                        json_array.append(json_obj)
-                else: 
-                    if not prefix_end: 
-                        prefix += stripped_line + "\n"
-                    else: 
-                        suffix += stripped_line + "\n"
-            else: 
-                if not prefix_end: 
-                    prefix += "\n"
-                else: 
-                    suffix += "\n"
-        formatted_list = json.dumps(json_array, indent=4)
+    #     for line in lines:
+    #         stripped_line = line.strip()  # remove leading/trailing white spaces
+    #         if stripped_line:  # if the line is not empty
+    #             if stripped_line[0].isdigit():  # if the line starts with a digit
+    #                 is_sublist = True
+    #                 prefix_end  = True
+    #                 json_obj = {"content": stripped_line.split('. ', 1)[1], "tasks": []}  # create a new json object with the title
+    #                 json_array.append(json_obj)  # append the new json object to the json array
+    #             elif stripped_line[0] == '-':  # if the line starts with a '-'
+    #                 prefix_end  = True
+    #                 if is_sublist: 
+    #                     json_obj = {"content": stripped_line[2:], "tasks": []}
+    #                     json_array[-1]["tasks"].append(json_obj)  # append the step to the last json object in the json array
+    #                 else: 
+    #                     json_obj = {"content": stripped_line[2:], "tasks": []}
+    #                     json_array.append(json_obj)
+    #             else: 
+    #                 if not prefix_end: 
+    #                     prefix += stripped_line + "\n"
+    #                 else: 
+    #                     suffix += stripped_line + "\n"
+    #         else: 
+    #             if not prefix_end: 
+    #                 prefix += "\n"
+    #             else: 
+    #                 suffix += "\n"
+    #     formatted_list = json.dumps(json_array, indent=4)
         
-        if formatted_list != "[]" or "": 
-            return prefix.strip() + "\n\n" + formatted_list + "\n\n" + suffix.strip()   
-        else:
-            return prefix.strip() + suffix.strip()
+    #     if formatted_list != "[]" or "": 
+    #         return prefix.strip() + "\n\n" + formatted_list + "\n\n" + suffix.strip()   
+    #     else:
+    #         return prefix.strip() + suffix.strip()
 
     def get_format_instructions(self) -> str:
         return FORMAT_INSTRUCTIONS
@@ -63,7 +63,7 @@ class GoalConvoOutputParser(AgentOutputParser):
     def parse(self, text: str) -> Union[AgentAction, AgentFinish]:
         if f"{self.ai_prefix}:" in text:
             return AgentFinish(
-                {"output": self.parse_to_json(text)}, text
+                {"output": text}, text
             )
         regex = r"Action: (.*?)[\n]*Action Input: (.*)"
         match = re.search(regex, text)
