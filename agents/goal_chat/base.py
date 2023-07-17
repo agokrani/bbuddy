@@ -1,30 +1,15 @@
 """An agent designed to hold a conversation regarding goal and milestones in addition to using tools."""
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence
 
-from pydantic import Field
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks import StdOutCallbackHandler
-from langchain.agents import Tool, AgentExecutor, load_tools, ConversationalAgent
-from langchain.agents.agent import Agent, AgentOutputParser
-from langchain.agents.agent_types import AgentType
+from langchain.agents import AgentExecutor, load_tools, ConversationalAgent
 from agents.goal_chat.output_parser import GoalConvoOutputParser
-from langchain.agents.utils import validate_tools_single_input
-from langchain.base_language import BaseLanguageModel
-from langchain.callbacks.base import BaseCallbackManager
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate, ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder
-from langchain.tools.base import BaseTool
 from langchain.memory import (
-    ConversationBufferMemory, 
-    CombinedMemory, 
-    ConversationSummaryMemory, 
     PostgresChatMessageHistory, 
-    ConversationBufferWindowMemory,
     ConversationSummaryBufferMemory
 )
-from db.goal_chat_history_manager import GoalChatHistoryManager
 from agents.goal_chat.prompt import (
     FORMAT_INSTRUCTIONS,
     system_template, 
@@ -32,7 +17,6 @@ from agents.goal_chat.prompt import (
 )
 from schema.goal import GoalInDB
 #from chains.formatter_chain.base import FormatterChain
-from langchain.chains import SequentialChain
 
 
 class GoalConversationalAgent:

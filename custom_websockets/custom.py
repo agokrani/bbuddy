@@ -25,7 +25,7 @@ class CustomWebsocketConnection(WebsocketConnection):
         while True:
             try:
                 user_message = await self.websocket.receive_text()
-                print(user_message)
+                #print(user_message)
                 await self.websocket.send_json(
                     WebsocketResponse(
                         sender=Sender.HUMAN,
@@ -52,7 +52,7 @@ class CustomWebsocketConnection(WebsocketConnection):
                 #logger.debug("client disconnected.")
                 break
             except Exception as e:
-                logger.error(e)
+                #logger.error(e)
                 await self.websocket.send_json(
                     WebsocketResponse(
                         sender=Sender.BOT,

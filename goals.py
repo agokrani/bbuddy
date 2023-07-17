@@ -2,16 +2,17 @@ import json
 from langchain.llms import OpenAI
 from langchain import LLMChain
 #from langchain.callbacks.base import CallbackManager
-#from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import (
     PromptTemplate,
 )
-from schema.goal import Milestone, Goal
+from schema.goal import Milestone, Goal, GoalType
 from db.goal_history_manager import GoalHistoryManager
 
 class GoalAgent: 
-    llm = OpenAI(temperature=0)
     verbose = True
+    llm = OpenAI(streaming=True, temperature=0, callbacks=[StreamingStdOutCallbackHandler()], verbose=verbose)
+    
     
     def chain(self, prompt):
         return LLMChain(llm=self.llm, prompt=prompt, verbose=self.verbose)
@@ -56,6 +57,11 @@ class GoalAgent:
         
         description = json.loads(response)["goal"]
         
+        milestones = self.get_milestones(description=description)
+        
+        return Goal(description=description, type=GoalType.GENERATED, milestones=milestones)
+    
+    def get_milestones(self, description): 
         milestone_prompt = PromptTemplate.from_template(
             "Goal: {goal}\n\n\n"
             + "Given the goal above what are the 5 milestones that I can set to make this a SMART goal\n\n"
@@ -66,13 +72,13 @@ class GoalAgent:
         
         milestones = [Milestone(content=milestone)for milestone in json.loads(response)["milestones"]]
         
-        return Goal(description=description, milestones=milestones)
-
+        return milestones
+    
     def store_goal(self, db, session_id:str, goal_to_add: Goal):
         history = GoalHistoryManager(
             session_id = session_id
         )
-        history.add_goal(db, goal_to_add)
+        return history.add_goal(db, goal_to_add)
 
     def update_goal(self, db, session_id: str, goal_to_update):
         history = GoalHistoryManager(

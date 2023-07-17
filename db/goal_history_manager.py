@@ -42,7 +42,7 @@ class GoalHistoryManager:
         return goal_history
 
     def add_goal(self, db, goal_to_add: Goal): 
-        self.append(db, goal_to_add)
+        return self.append(db, goal_to_add)
 
     def append(self, db, goal_to_add: Goal) -> None:
         """Append the reflection to the record in PostgreSQL"""
@@ -53,7 +53,12 @@ class GoalHistoryManager:
         cursor.execute(
             query, (self.session_id, json.dumps(goal_to_dict(goal_to_add)))
         )
+        cursor.execute('SELECT LASTVAL()')
+        gid = cursor.fetchone()['lastval']
+        
         db.commit()
+        
+        return gid
 
     @classmethod
     def get_goal_by_id(cls, db, id:int): 

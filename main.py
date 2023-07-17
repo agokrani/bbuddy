@@ -3,10 +3,10 @@ from checkin import GenrativeCheckIn
 from reflections import MoodReflectionAgent
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
-from schema.reflection import ReflectionPerTopic, Reflection
+from schema.reflection import Reflection
 from endpoints import login
 from deps import get_db, connection_string
-from schema.goal import Goal, GoalInDB, goal_from_dict
+from schema.goal import Goal, GoalInDB, GoalType, goal_from_dict
 from goals import GoalAgent
 from endpoints import goal_chat
 from db.stats_manager import stats_manager
@@ -111,7 +111,6 @@ async def set_new_goal(start_date = None, end_date = None, db = Depends(get_db),
 
 @app.post("/update_goal")
 async def update_goal(data: dict, db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
-    #goal_to_update = goal_from_dict(data);
     goal_agent.update_goal(db=db, session_id=str(currentUser.id), goal_to_update=data)
     
 
@@ -119,7 +118,18 @@ async def update_goal(data: dict, db = Depends(get_db), currentUser = Depends(lo
 async def get_counter_stats(db=Depends(get_db), currentUser = Depends(login.get_current_user)): 
     return stats_manager.get_counters(db, currentUser.id)
 
-@app.post("/update_stats")
+@app.post("/update_stats", response_model=GoalInDB)
 async def update_stats(data: dict, db=Depends(get_db), currentUser = Depends(login.get_current_user)): 
-    #print()
     stats_manager.update_stats(user_stat_from_dict(data), db, currentUser.id)
+
+@app.post("/set_personal_goal")
+async def set_personal_goal(data: dict, db=Depends(get_db), currentUser = Depends(login.get_current_user)):
+    milestones = goal_agent.get_milestones(data["description"])
+    
+    goal_to_add = Goal(description=data["description"], type=GoalType(data["type"]), milestones=milestones)
+    
+    gid = goal_agent.store_goal(db=db, session_id=str(currentUser.id), goal_to_add=goal_to_add)
+    newGoal = GoalInDB(id=gid, **goal_to_add.dict())
+    
+    return newGoal
+    
