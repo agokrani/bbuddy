@@ -21,17 +21,17 @@ async def goal_chat_endpoint(goal_id: int, websocket: WebSocket, db=Depends(get_
     await connection.connect()
 
 
-@langchain_router.post("/message_id/{goal_id}")
-async def get_id_from_db(goal_id: int, data: dict): 
-        manager = GoalChatHistoryManager(
-                        session_id=str(goal_id),
-                        connection_string=connection_string
-                )
-        
-        return manager.get_message_id(_message_from_dict(data))
+#@langchain_router.post("/message_id/{goal_id}")
+#async def get_id_from_db(goal_id: int, data: dict): 
+#        manager = GoalChatHistoryManager(
+#                        session_id=str(goal_id),
+#                        connection_string=connection_string
+#                )
+#        
+#        return manager.get_message_id(_message_from_dict(data))
 
 
-@langchain_router.get("/chat_history/{goal_id}")
+#@langchain_router.get("/chat_history/{goal_id}")
 # async def get_chat_history(goal_id: int, page: int, page_size: int):
 #     manager = GoalChatHistoryManager(
 #         session_id=str(goal_id),
@@ -60,27 +60,28 @@ async def get_id_from_db(goal_id: int, data: dict):
 #     page_messages = all_messages[start_index:end_index]
 
 #     return messages_to_dict(page_messages)
-async def get_chat_history(goal_id: int, page: int, page_size: int):
-    manager = GoalChatHistoryManager(
-        session_id=str(goal_id),
-        connection_string=connection_string
-    )
+#async def get_chat_history(goal_id: int, page: int, page_size: int):
+    #manager = GoalChatHistoryManager(
+    #    session_id=str(goal_id),
+    #    connection_string=connection_string
+    #)
 
-    async def chat_message_generator():
-        all_messages = manager.messages[::-1]
-        total_messages = len(all_messages)  
-        start_index = (page - 1) * page_size  
-        end_index = start_index + page_size
+    #async def chat_message_generator():
+    #    all_messages = manager.messages[::-1]
+    #    total_messages = len(all_messages)  
+    #    start_index = (page - 1) * page_size  
+    #    end_index = start_index + page_size
 
-        if end_index > total_messages:
-                # Adjust the end index to the last available message
-                end_index = total_messages
+    #    if end_index > total_messages:
+    #            # Adjust the end index to the last available message
+    #            end_index = total_messages
 
 
-        for message in all_messages[start_index:end_index]:
-           yield message
-    messages = []
-    async for message in chat_message_generator():  
-        messages.append(message)
-    return messages_to_dict(messages)
+    #    for message in all_messages[start_index:end_index]:
+    #       yield message
+    #messages = []
+    #async for message in chat_message_generator():  
+    #    messages.append(message)
+    #return messages_to_dict(messages)
+    #pass
 
