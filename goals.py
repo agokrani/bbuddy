@@ -85,3 +85,9 @@ class GoalAgent:
             session_id = session_id
         )
         history.update_goal(db, goal_to_update)
+
+    def delete_goal(self, db, session_id: str, goal_id: int): 
+        history = GoalHistoryManager(
+            session_id=session_id
+        )
+        history.delete_goal(db, id=goal_id)
