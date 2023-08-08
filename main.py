@@ -28,7 +28,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["POST", "GET"],
+    #allow_methods=["POST", "GET"],
+    allow_methods=["*"],
 		allow_headers=["*"],
     max_age=3600,
 )
@@ -118,11 +119,11 @@ async def update_goal(data: dict, db = Depends(get_db), currentUser = Depends(lo
 async def get_counter_stats(db=Depends(get_db), currentUser = Depends(login.get_current_user)): 
     return stats_manager.get_counters(db, currentUser.id)
 
-@app.post("/update_stats", response_model=GoalInDB)
+@app.post("/update_stats")
 async def update_stats(data: dict, db=Depends(get_db), currentUser = Depends(login.get_current_user)): 
     stats_manager.update_stats(user_stat_from_dict(data), db, currentUser.id)
 
-@app.post("/set_personal_goal")
+@app.post("/set_personal_goal", response_model=GoalInDB)
 async def set_personal_goal(data: dict, db=Depends(get_db), currentUser = Depends(login.get_current_user)):
     milestones = goal_agent.get_milestones(data["description"])
     
@@ -132,4 +133,8 @@ async def set_personal_goal(data: dict, db=Depends(get_db), currentUser = Depend
     newGoal = GoalInDB(id=gid, **goal_to_add.dict())
     
     return newGoal
+    
+@app.delete("/delete_goal/{goal_id}")
+async def delete_goal(goal_id: int, db = Depends(get_db), currentUser=Depends(login.get_current_user)):
+    goal_agent.delete_goal(db=db, session_id=str(currentUser.id), goal_id=goal_id)
     

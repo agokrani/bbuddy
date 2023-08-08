@@ -72,9 +72,23 @@ class GoalHistoryManager:
     
 
     def update_goal(self, db, goal_to_update): 
+        goal_type = None
+        try:
+            goal_type = goal_to_update["type"]
+        except: 
+            goal_type = "generated"
+
         cursor = db.cursor()
         query = f"UPDATE {self.table_name} SET goal = %s WHERE  id = %s;"
-        cursor.execute(query, (json.dumps({"description": goal_to_update["description"], "milestones": goal_to_update["milestones"]}), 
+        cursor.execute(query, (json.dumps({"description": goal_to_update["description"], "type": goal_type, "milestones": goal_to_update["milestones"]}), 
                                goal_to_update["id"],))
         
-        db.commit() 
+        db.commit()
+
+    def delete_goal(self, db, id:int):
+        cursor = db.cursor()
+        
+        query = f"DELETE FROM {self.table_name} WHERE id = %s;"
+        cursor.execute(query, (id,))
+
+        db.commit()
