@@ -22,7 +22,7 @@ class Goal(BaseModel):
     milestones: List[Milestone]
 
 class GoalInDB(Goal):
-    id: int
+    id: str
 
 def goal_to_dict(goal):
     return {"description": goal.description, "type": goal.type, "milestones": [m.to_dict() for m in goal.milestones]}

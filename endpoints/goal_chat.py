@@ -6,7 +6,6 @@ from langchain.memory.chat_message_histories import FirestoreChatMessageHistory
 from agents import GoalConversationAgent
 from lanarky.callbacks import AsyncLLMChainWebsocketCallback
 from langchain.schema import messages_to_dict
-from schema.message import messages_from_dict
 from fastapi import Query
 from endpoints import login
 

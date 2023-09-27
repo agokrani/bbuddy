@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 from db.goal_history_manager import GoalHistoryManager
 from deps import get_db
 from routing.utils import create_db_dependency
+from agents.goal_chat.base import GoalConversationalAgent
 
 class CustomLangchainRouter(LangchainRouter): 
     def add_langchain_api_websocket_route(self, url: str): 

@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
@@ -11,6 +11,9 @@ from schema.user import UserCreate, UserInDB, User
 from schema.token import Token, RefreshToken
 from deps import get_db
 import logging
+import firebase_admin
+from firebase_admin import credentials, auth
+
 
 router = APIRouter()
 
@@ -39,6 +42,21 @@ def verify_password(plain_password, hashed_password):
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
+def get_firebase_user(token: str = Header(...)):
+    user_id = None
+    try:
+        firebase_admin.get_app()
+    except ValueError as e:
+        logger.debug("Initializing Firebase app: %s", e)
+        firebase_admin.initialize_app()
+    try:
+        decoded_token = auth.verify_id_token(token)
+        user_id = decoded_token['uid']
+    except: 
+        pass
+    return user_id
+
 
 # Function to create access token
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
