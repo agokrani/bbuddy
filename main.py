@@ -11,7 +11,8 @@ from deps import get_db
 from schema.goal import Goal, GoalInDB, GoalType
 from goals import GoalAgent
 from endpoints import goal_chat
-from db.stats_manager import stats_manager
+#from db.stats_manager import stats_manager
+from stats import stats_manager
 from schema.stats import UserStats, user_stat_from_dict
 from embedchain.vectordb.chroma import ChromaDB
 from embedchain.embedder.openai import OpenAiEmbedder
@@ -138,8 +139,8 @@ async def mood_check_in_history(last_k = None, user_id = Depends(login.get_fireb
     #return generative_check_in.get_history(user_id=str(currentUser.id), last_k=last_k)
     
 @app.get("/count_mood_check_in")
-async def count_mood_check_in(currentUser = Depends(login.get_current_user)): 
-    return generative_check_in.get_count(str(currentUser.id))
+async def count_mood_check_in(user_id = Depends(login.get_firebase_user)): 
+    return generative_check_in.get_count(user_id=user_id)
     #return generative_check_in.count_check_in(str(currentUser.id), connection_string)
 
 @app.get("/count_reflections")
@@ -156,23 +157,23 @@ async def get_reflection_heading(data: dict):
     return reflection_agent.get_heading(topics=data['topics'])
 
 @app.post("/mood_reflection", response_model=Reflection)
-async def mood_reflection(data: dict, db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
-    #reflection_per_topic = reflection_agent.reflect(topics=data['topics'], user_reflections=data['user_reflections'], session_id=str(currentUser.id), postgres_connection=connection_string)
-    reflection_per_topic = reflection_agent.reflect(topics=data['topics'], user_reflections=data['user_reflections'], user_id=str(currentUser.id))
+async def mood_reflection(request: Request, user_id = Depends(login.get_firebase_user)): 
+    data = await request.json()
+    reflection_per_topic = reflection_agent.reflect(topics=data['topics'], user_reflections=data['user_reflections'], user_id=user_id)
     if data['heading'] == '' or data['heading'] == None: 
         data['heading'] = reflection_agent.get_heading(data['topics'])['heading']
     generated_reflection = Reflection(
         heading=data['heading'],
         topic_reflections = reflection_per_topic
     )
-    reflection_agent.store(reflection_to_add=generated_reflection, user_id=str(currentUser.id))
+    reflection_agent.store(reflection_to_add=generated_reflection, user_id=user_id)
     return generated_reflection
 
 
 @app.get("/reflection_history", response_model=List[Reflection])
-async def get_reflection_history(start_date = None, end_date = None, db = Depends(get_db), currentUser = Depends(login.get_current_user)):
-    #history = reflection_agent.get_reflection_history(db, str(currentUser.id), start_date=start_date, end_date=end_date)
-    history = reflection_agent.get_history(user_id=str(currentUser.id), start_date=start_date, end_date=end_date)
+async def get_reflection_history(start_date = None, end_date = None, user_id = Depends(login.get_firebase_user)):
+    
+    history = reflection_agent.get_history(user_id=user_id, start_date=start_date, end_date=end_date)
     return history
 
 @app.get("/goal_history", response_model=List[GoalInDB])
@@ -199,12 +200,14 @@ async def update_goal(data: dict, db = Depends(get_db), currentUser = Depends(lo
     goal_agent.update(goal_to_update=goal_to_update, user_id=(currentUser.id))
 
 @app.get("/counter_stats", response_model=List[UserStats]) 
-async def get_counter_stats(db=Depends(get_db), currentUser = Depends(login.get_current_user)): 
-    return stats_manager.get_counters(db, currentUser.id)
+async def get_counter_stats(user_id = Depends(login.get_firebase_user)): 
+    return stats_manager.get_stats(user_id=user_id)
+    #return stats_manager.get_counters(db, currentUser.id)
 
 @app.post("/update_stats")
-async def update_stats(data: dict, db=Depends(get_db), currentUser = Depends(login.get_current_user)): 
-    stats_manager.update_stats(user_stat_from_dict(data), db, currentUser.id)
+async def update_stats(request: Request, user_id = Depends(login.get_firebase_user)): 
+    data = await request.json()
+    stats_manager.update(user_stat_from_dict(data), user_id=user_id)
 
 @app.post("/set_personal_goal", response_model=GoalInDB)
 async def set_personal_goal(data: dict, db=Depends(get_db), currentUser = Depends(login.get_current_user)):

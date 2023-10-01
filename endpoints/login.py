@@ -54,7 +54,7 @@ def get_firebase_user(token: str = Header(...)):
         decoded_token = auth.verify_id_token(token)
         user_id = decoded_token['uid']
     except: 
-        pass
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return user_id
 
 

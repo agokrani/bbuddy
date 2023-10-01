@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING, List, Optional, Dict, Any
 import firebase_admin
 from firebase_admin import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +23,14 @@ class FirestoreClient:
             firebase_admin.initialize_app()
         
         self.firestore_client = firestore.Client()
-        if self.user_id is not None: 
-            self.collection = self.firestore_client.collection(
-                self.collection_name
-            ).where("user_id", "==", self.user_id)
-        else: 
-            self.collection = self.firestore_client.collection(
-                self.collection_name
-            )
+        # if self.user_id is not None:
+        #     self.collection = self.firestore_client.collection(
+        #         self.collection_name
+        #     ).where("user_id", "==", self.user_id)
+        # else: 
+        self.collection = self.firestore_client.collection(
+            self.collection_name
+        )
     
     def get_document(self, document_id: str) -> Optional[Dict[str, Any]]:
         try:
@@ -42,15 +43,21 @@ class FirestoreClient:
         except Exception as e:
             logger.error("Error retrieving document: %s", str(e))
         return None
-    
-    def get_documents(self) -> List[Dict[str, Any]]:
+        
+    def get_documents(self, where=None) -> List[Dict[str, Any]]:
         try:
-            docs = self.collection.stream()
+            query = self.collection
+            if self.user_id is not None:
+                query = query.where("user_id", "==", self.user_id)
+            if where is not None:
+                query = query.where(*where)
+            docs = query.stream()
             documents = [{"id": doc.id, **doc.to_dict()} for doc in docs]
             return documents
         except Exception as e:
             logger.error("Error retrieving documents: %s", str(e))
             return []
+
         
     def set_document(self, data: Dict[str, Any]) -> Optional[str]:
         try:
@@ -67,6 +74,7 @@ class FirestoreClient:
         try:
             doc_ref = self.collection.document(document_id)
             doc_ref.update(data)
+            
             return True
         except Exception as e:
             logger.error("Error updating document: %s", str(e))
