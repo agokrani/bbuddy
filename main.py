@@ -11,7 +11,6 @@ from deps import get_db
 from schema.goal import Goal, GoalInDB, GoalType
 from goals import GoalAgent
 from endpoints import goal_chat
-#from db.stats_manager import stats_manager
 from stats import stats_manager
 from schema.stats import UserStats, user_stat_from_dict
 from embedchain.vectordb.chroma import ChromaDB
@@ -144,9 +143,9 @@ async def count_mood_check_in(user_id = Depends(login.get_firebase_user)):
     #return generative_check_in.count_check_in(str(currentUser.id), connection_string)
 
 @app.get("/count_reflections")
-async def count_reflections(db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
+async def count_reflections(user_id = Depends(login.get_firebase_user)): 
     #return reflection_agent.count_reflections(db=db, session_id=str(currentUser.id))
-    return reflection_agent.get_count(user_id=str(currentUser.id))
+    return reflection_agent.get_count(user_id=user_id)
 
 @app.get("/reflection_topics")
 async def get_topics_of_reflection(user_id:str = Depends(login.get_firebase_user)): 
@@ -177,32 +176,32 @@ async def get_reflection_history(start_date = None, end_date = None, user_id = D
     return history
 
 @app.get("/goal_history", response_model=List[GoalInDB])
-async def get_goal_history(db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
+async def get_goal_history(user_id = Depends(login.get_firebase_user)): 
     #history = goal_agent.get_goal_history(db, str(currentUser.id))
-    history = goal_agent.get_history(user_id=str(currentUser.id))
+    history = goal_agent.get_history(user_id=user_id)
     return history
 
 @app.get("/set_new_goal", response_model=GoalInDB)
-async def set_new_goal(start_date = None, end_date = None, db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
-    goal = goal_agent.set_new_goal(user_id=str(currentUser.id), reflection_agent=reflection_agent, start_date = start_date, end_date = end_date)
+async def set_new_goal(start_date = None, end_date = None, user_id = Depends(login.get_firebase_user)): 
+    goal = goal_agent.set_new_goal(user_id=user_id, reflection_agent=reflection_agent, start_date = start_date, end_date = end_date)
     
     #goal_agent.store_goal(db=db, session_id=str(currentUser.id), goal_to_add=new_goal)
     
-    gid = goal_agent.store(goal_to_add=goal, user_id=str(currentUser.id))
+    gid = goal_agent.store(goal_to_add=goal, user_id=user_id)
     new_goal = GoalInDB(id=gid, **goal.dict())
 
     return new_goal
 
 @app.post("/update_goal")
-async def update_goal(data: dict, db = Depends(get_db), currentUser = Depends(login.get_current_user)): 
+async def update_goal(request: Request, user_id = Depends(login.get_firebase_user)): 
+    data = await request.json()
     #goal_agent.update_goal(db=db, session_id=str(currentUser.id), goal_to_update=data)
     goal_to_update = GoalInDB(**data)
-    goal_agent.update(goal_to_update=goal_to_update, user_id=(currentUser.id))
+    goal_agent.update(goal_to_update=goal_to_update, user_id=user_id)
 
 @app.get("/counter_stats", response_model=List[UserStats]) 
 async def get_counter_stats(user_id = Depends(login.get_firebase_user)): 
     return stats_manager.get_stats(user_id=user_id)
-    #return stats_manager.get_counters(db, currentUser.id)
 
 @app.post("/update_stats")
 async def update_stats(request: Request, user_id = Depends(login.get_firebase_user)): 
@@ -210,18 +209,19 @@ async def update_stats(request: Request, user_id = Depends(login.get_firebase_us
     stats_manager.update(user_stat_from_dict(data), user_id=user_id)
 
 @app.post("/set_personal_goal", response_model=GoalInDB)
-async def set_personal_goal(data: dict, db=Depends(get_db), currentUser = Depends(login.get_current_user)):
+async def set_personal_goal(request: Request, user_id = Depends(login.get_firebase_user)):
+    data = await request.json()
     milestones = goal_agent.get_milestones(data["description"])
     
     goal_to_add = Goal(description=data["description"], type=GoalType(data["type"]), milestones=milestones)
     
     #gid = goal_agent.store_goal(db=db, session_id=str(currentUser.id), goal_to_add=goal_to_add)
-    gid = goal_agent.store(goal_to_add=goal_to_add, user_id=str(currentUser.id))
+    gid = goal_agent.store(goal_to_add=goal_to_add, user_id=user_id)
     new_goal = GoalInDB(id=gid, **goal_to_add.dict())
     
     return new_goal
     
 @app.delete("/delete_goal/{goal_id}")
-async def delete_goal(goal_id: str, db = Depends(get_db), currentUser=Depends(login.get_current_user)):
+async def delete_goal(goal_id: str, user_id=Depends(login.get_firebase_user)):
     #goal_agent.delete_goal(db=db, session_id=str(currentUser.id), goal_id=goal_id)
-    goal_agent.delete(goal_id=goal_id, user_id=(currentUser.id))
+    goal_agent.delete(goal_id=goal_id, user_id=user_id)
