@@ -26,7 +26,7 @@ class StatsManager:
                 "value": "0"
             }
             client.set_document(stat)
-            stats_to_insert(stat)
+            stats_to_insert.append(stat)
         return stats_to_insert
     
     
