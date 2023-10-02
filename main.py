@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, Header, Request
+from fastapi.responses import StreamingResponse
 from agents.cbt_conversation.base import CbtConversationAgent
 from checkins import generative_check_in
 from reflections import MoodReflectionAgent
@@ -52,21 +53,21 @@ def chunk_generator(data, chunk_size):
 @app.post("/mood_check_in")
 async def mood_check_in(request: Request, user_id:str = Depends(login.get_firebase_user)):
     data = await request.json()
-    message = generative_check_in.get_response(
-           feeling=data['feeling'],
-           feeling_form=data['feeling_form'],
-           reason_entity=data['reason_entity'], 
-           reason=data['reason']
-    )
-    #print(message)
-    # """ Get the response from model for daily check in """
-    return {"message": message}
-    # return StreamingResponse(generative_check_in.get_response(
+    # message = generative_check_in.get_response(
     #        feeling=data['feeling'],
     #        feeling_form=data['feeling_form'],
     #        reason_entity=data['reason_entity'], 
-    #        reason=data['reason'])
+    #        reason=data['reason']
     # )
+    #print(message)
+    # """ Get the response from model for daily check in """
+    #return {"message": message}
+    return StreamingResponse(generative_check_in.get_response(
+           feeling=data['feeling'],
+           feeling_form=data['feeling_form'],
+           reason_entity=data['reason_entity'], 
+           reason=data['reason'])
+    )
 #     message = """I'm sorry to hear that you're feeling anxious and stressed about your work. It can be overwhelming when you feel like you can't do anything and your boss is complaining. Let's explore some techniques that can help you cope with these feelings.
 
 # One technique that may be helpful is called "Thought challenging." This involves identifying and challenging negative thoughts that contribute to your anxiety and stress. Start by recognizing any automatic negative thoughts that come up, such as "I can't do anything" or "My boss is always complaining." These thoughts can often be exaggerated or distorted.

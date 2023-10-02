@@ -89,7 +89,7 @@ class GenrativeCheckIn:
         CBT coach:
     """
     )
-    config = LlmConfig(number_documents=2, template=cbt_coach_template, system_prompt=system_prompt, stream=False)
+    config = LlmConfig(number_documents=2, template=cbt_coach_template, system_prompt=system_prompt, stream=True)
     
     cbt_coach = App(llm_config=config, system_prompt=system_prompt)
     
@@ -104,11 +104,11 @@ class GenrativeCheckIn:
     def get_response(self, feeling=None, feeling_form=None, reason_entity=None, reason=None):
         query = self.human_message.substitute(feeling=feeling, feeling_form=feeling_form, reason_entity=reason_entity, reason=reason)
         
-        # def message_chunk_generator(message, chunk_size):
-        #     start = 0
-        #     while start < len(message):
-        #         yield message[start:start+chunk_size]
-        #         start += chunk_size
+        def message_chunk_generator(message, chunk_size):
+            start = 0
+            while start < len(message):
+                yield message[start:start+chunk_size]
+                start += chunk_size
         
         message = """I'm sorry to hear that you're feeling anxious and stressed about your work. It can be overwhelming when you feel like you can't do anything and your boss is complaining. Let's explore some techniques that can help you cope with these feelings.
 
@@ -121,18 +121,18 @@ Once you have gathered evidence, try to come up with alternative thoughts that a
 Another technique that can be beneficial is "Self-care." It's important to prioritize your well-being and take care of yourself, especially during stressful times. Make sure you're getting enough rest, eating nutritious meals, and engaging in activities that bring you joy and relaxation. Taking breaks throughout the day and practicing deep breathing exercises can also help reduce stress and promote a sense of calm.
 
 Remember, it's normal to feel anxious and stressed at times, but by practicing these techniques and seeking support when needed, you can better manage your emotions and navigate through challenging situations. If your anxiety and stress persist or become overwhelming, it may be helpful to reach out to a mental health professional for additional guidance and support."""
-        return message
+        #return message
         #return self.cbt_coach.query(query, config=self.config)
-        # chunk_size = 200
-        # for chunk in self.cbt_coach.query(query, config=self.config): #message_chunk_generator(message, chunk_size):
-        #     response = None
-        #     if not response:
-        #         response = chunk 
-        #         #print(response, end='')
-        #     else: 
-        #         response += chunk
-        #     print(chunk)
-        #     yield chunk
+        chunk_size = 500
+        for chunk in self.cbt_coach.query(query, config=self.config): #message_chunk_generator(message, chunk_size):  
+            response = None
+            if not response:
+                response = chunk 
+                print(response, end='')
+            else: 
+                response += chunk
+            #print(chunk)
+            yield chunk
             
     def store(self, feeling_message, reason, ai_response, user_id): 
         client = FirestoreClient(collection_name=self.collection_name)
