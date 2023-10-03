@@ -89,7 +89,7 @@ class GenrativeCheckIn:
         CBT coach:
     """
     )
-    config = LlmConfig(number_documents=2, template=cbt_coach_template, system_prompt=system_prompt, stream=True)
+    config = LlmConfig(number_documents=2, template=cbt_coach_template, system_prompt=system_prompt, stream=False)
     
     cbt_coach = App(llm_config=config, system_prompt=system_prompt)
     
@@ -122,17 +122,17 @@ Another technique that can be beneficial is "Self-care." It's important to prior
 
 Remember, it's normal to feel anxious and stressed at times, but by practicing these techniques and seeking support when needed, you can better manage your emotions and navigate through challenging situations. If your anxiety and stress persist or become overwhelming, it may be helpful to reach out to a mental health professional for additional guidance and support."""
         #return message
-        #return self.cbt_coach.query(query, config=self.config)
-        chunk_size = 500
-        for chunk in self.cbt_coach.query(query, config=self.config): #message_chunk_generator(message, chunk_size):  
-            response = None
-            if not response:
-                response = chunk 
-                print(response, end='')
-            else: 
-                response += chunk
-            #print(chunk)
-            yield chunk
+        return self.cbt_coach.query(query, config=self.config)
+        # chunk_size = 2
+        # for chunk in self.cbt_coach.query(query, config=self.config): #message_chunk_generator(message, chunk_size):   
+        #     response = None
+        #     if not response:
+        #         response = chunk 
+        #         #print(response, end='')
+        #     else: 
+        #         response += chunk
+        #     print(chunk)
+        #     yield chunk
             
     def store(self, feeling_message, reason, ai_response, user_id): 
         client = FirestoreClient(collection_name=self.collection_name)
