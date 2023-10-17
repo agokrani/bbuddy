@@ -112,13 +112,6 @@ class MoodReflectionAgent:
             reflections.append(self._get_insights_on_topic(topic, user_id, user_reflection, last_k=last_k))
         
         return reflections
-            
-    # def store_reflection(self, db, session_id, reflection_to_add: List[ReflectionPerTopic]): 
-    #     history = ReflectionHistoryManager(
-    #         session_id = session_id
-    #     )
-
-    #     history.add_reflection(db, reflection_to_add)
 
     def store(self, reflection_to_add: Reflection, user_id: str):
         client = FirestoreClient(collection_name=self.collection_name)
@@ -128,13 +121,6 @@ class MoodReflectionAgent:
                 "create_time": datetime.now(),
         })
         
-
-    # def get_reflection_history(self, db, session_id: str, start_date=None, end_date=None):
-    #     history = ReflectionHistoryManager(
-    #         session_id = session_id
-    #     )
-    #     return history.reflection_history(db, start_date=start_date, end_date=end_date)
-    
     def get_history(self, user_id: str, start_date=None, end_date=None):
         client = FirestoreClient(collection_name=self.collection_name, user_id=user_id)
         documents = client.get_documents()
@@ -158,11 +144,6 @@ class MoodReflectionAgent:
             history = reflections_from_dict([doc["reflection"] for doc in documents])
         
         return history
-
-    # def count_reflections(self, db, session_id: str): 
-    #     history = self.get_reflection_history(db, session_id)
-        
-    #     return len(history)
     
     def get_count(self, user_id: str): 
         client = FirestoreClient(collection_name=self.collection_name, user_id=user_id)

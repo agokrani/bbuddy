@@ -8,7 +8,7 @@ from langchain.prompts import (
     PromptTemplate,
 )
 from db.firestore_client import FirestoreClient
-from schema.goal import Milestone, Goal, GoalType, goal_to_dict, goals_from_dict
+from schema.goal import Milestone, Goal, GoalType, goal_to_dict, goals_from_dict, goal_from_dict
 from db.goal_history_manager import GoalHistoryManager
 
 class GoalAgent: 
@@ -18,13 +18,7 @@ class GoalAgent:
     
     def chain(self, prompt):
         return LLMChain(llm=self.llm, prompt=prompt, verbose=self.verbose)
-
-    # def get_goal_history(self, db, session_id: str): 
-    #     history = GoalHistoryManager(
-    #         session_id = session_id
-    #     )
-    #     return history.goal_history(db)
-    
+        
     def get_history(self, user_id:str): 
         client = FirestoreClient(collection_name=self.collection_name, user_id=user_id)
         
@@ -84,26 +78,17 @@ class GoalAgent:
         
         return milestones
     
-    # def store_goal(self, db, session_id:str, goal_to_add: Goal):
-    #     history = GoalHistoryManager(
-    #         session_id = session_id
-    #     )
-    #     return history.add_goal(db, goal_to_add)
-    
-    def store(self, goal_to_add: Goal, user_id: str):
+    def store(self, goal_to_add: Goal, user_id: str, **kwargs):
+        create_time = datetime.now();
+        if "create_time" in kwargs: 
+            create_time = kwargs["create_time"]
         client = FirestoreClient(collection_name=self.collection_name)
         return client.set_document({
                 "user_id": user_id,
                 "goal": goal_to_dict(goal_to_add),
-                "create_time": datetime.now(),
+                "create_time": create_time,
         })
 
-    # def update_goal(self, db, session_id: str, goal_to_update):
-    #     history = GoalHistoryManager(
-    #         session_id = session_id
-    #     )
-    #     history.update_goal(db, goal_to_update)
-    
     def update(self, goal_to_update, user_id: str): 
         client = FirestoreClient(collection_name=self.collection_name)
         client.update_document(document_id=goal_to_update.id, data={
@@ -114,8 +99,11 @@ class GoalAgent:
         client = FirestoreClient(collection_name=self.collection_name)
         client.delete_document(document_id=goal_id)
 
-    # def delete_goal(self, db, session_id: str, goal_id: int): 
-    #     history = GoalHistoryManager(
-    #         session_id=session_id
-    #     )
-    #     history.delete_goal(db, id=goal_id)
+    def get_by_id(self, goal_id: str, user_id:str=None):
+        client = FirestoreClient(collection_name=self.collection_name, user_id=user_id)
+        
+        doc = client.get_document(goal_id)
+        goal = goal_from_dict(doc)
+        
+        return goal
+goal_agent = GoalAgent()

@@ -37,7 +37,7 @@ class FirestoreClient:
             doc_ref = self.collection.document(document_id)
             doc = doc_ref.get()
             if doc.exists:
-                return doc.to_dict()
+                return {"id": doc.id, **doc.to_dict()}
             else:
                 logger.warning("Document %s/%s does not exist.", self.collection_name, document_id)
         except Exception as e:

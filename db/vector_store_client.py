@@ -1,4 +1,4 @@
-from embedchain.embedder.openai import OpenAiEmbedder
+from embedchain.embedder.openai import OpenAIEmbedder
 from embedchain.config import BaseEmbedderConfig
 from embedchain.vectordb.chroma import ChromaDB
 
@@ -13,7 +13,7 @@ class VectorStoreClient:
 
     def initialize_db(self, model="text-embedding-ada-002"):
         self.db = ChromaDB()
-        embedder = OpenAiEmbedder(config=BaseEmbedderConfig(model=model))
+        embedder = OpenAIEmbedder(config=BaseEmbedderConfig(model=model))
         self.db._set_embedder(embedder=embedder)
         self.db._initialize()
 

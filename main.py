@@ -1,29 +1,29 @@
-from fastapi import FastAPI, Depends, Header, Request, Response
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Depends, Request
+from datetime import datetime
+from lanarky import LangchainRouter
+
+from langchain import ConversationChain
+from langchain.chat_models import ChatOpenAI
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from agents.cbt_conversation.base import CbtConversationAgent
 from checkins import generative_check_in
+from goals import goal_agent
 from reflections import MoodReflectionAgent
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
-from schema.checkIn import CheckIn
 from schema.reflection import Reflection
 from endpoints import login 
-from deps import get_db
 from schema.goal import Goal, GoalInDB, GoalType
-from goals import GoalAgent
-from endpoints import goal_chat
+from endpoints import goal_chat, checkin_chat
 from stats import stats_manager
 from schema.stats import UserStats, user_stat_from_dict
-from embedchain.vectordb.chroma import ChromaDB
-from embedchain.embedder.openai import OpenAiEmbedder
-from embedchain.config import BaseEmbedderConfig
 from db.vector_store_client import vClient
-import io
+
 app = FastAPI()
 
 app.include_router(login.router)
 app.include_router(goal_chat.langchain_router)
-
+app.include_router(checkin_chat.checkin_router)
 # Add CORS middleware
 origins = [
     "http://localhost",
@@ -44,7 +44,23 @@ app.add_middleware(
 
 
 reflection_agent = MoodReflectionAgent()
-goal_agent = GoalAgent()
+
+def create_chain():
+    return ConversationChain(
+        llm=ChatOpenAI(
+            temperature=0,
+            streaming=True,
+            callbacks=[StreamingStdOutCallbackHandler()]
+        ),
+        verbose=True,
+    )
+chain = create_chain()
+
+langchain_router = LangchainRouter(
+    langchain_url="/chat", langchain_object=chain, streaming_mode=1
+)
+
+app.include_router(langchain_router)
 
 def chunk_generator(data, chunk_size):
     for i in range(0, len(data), chunk_size):
@@ -195,8 +211,9 @@ async def set_new_goal(start_date = None, end_date = None, user_id = Depends(log
     goal = goal_agent.set_new_goal(user_id=user_id, reflection_agent=reflection_agent, start_date = start_date, end_date = end_date)
     
     #goal_agent.store_goal(db=db, session_id=str(currentUser.id), goal_to_add=new_goal)
-    
-    gid = goal_agent.store(goal_to_add=goal, user_id=user_id)
+    create_time = datetime.now()
+    gid = goal_agent.store(goal_to_add=goal, user_id=user_id, create_time=create_time)
+    goal.create_time = create_time
     new_goal = GoalInDB(id=gid, **goal.dict())
 
     return new_goal

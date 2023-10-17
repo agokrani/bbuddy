@@ -15,7 +15,7 @@ class StatsManager:
             return user_stats_from_list(stats)
         else: 
             return self.store(user_id)
-    
+        
     def store(self, user_id: str): 
         client = FirestoreClient(collection_name=self.collection_name)
         stats_to_insert = []
