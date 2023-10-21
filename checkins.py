@@ -17,14 +17,14 @@ from string import Template
 from db.firestore_client import FirestoreClient
 from schema.checkIn import CheckIn
 from embedchain.config import BaseLlmConfig
-
+from utils.encryption import encrypt, decrypt
 class GenrativeCheckIn: 
     verbose = True
     llm = ChatOpenAI(streaming=True, callbacks=[StreamingStdOutCallbackHandler()], verbose=True, temperature=0)
     
     collection_name = "check_in"
 
-    system_prompt="""Assistant is a large language model built on top of Open AI API's by Bbuddy.ai
+    system_prompt="""Assistant is a large language model builtby bbuddy.ai
 
     Assistant is very power emotionally intelligent friend that knows about wide variety of Congnitive behavioral therapy (CBT) techniques which allows the assistant to provide 
     guidence to develop new healthy habits when needed. With its ability to generate human-like task, it provides helpful advices, supports them and promotes positive thinking. Besides, 
@@ -41,7 +41,14 @@ class GenrativeCheckIn:
     about a particular mood, Assitant is here to assist. Lastly, assistant also knows that it's only single interaction chat so it can not end its answers on questions in most cases. 
 
     ===================================================================================================================
-        IMPORTANT: Please keep your answers limited to max 150 words 
+        IMPORTANT: Please keep your answers limited to max 150 words
+        
+        IMPORTANT: Please do not create the name of the techniques by yourself. If the technique doesn't have name 
+        just explain. Do not hallucinate. Also don't mention that instead of providing specific CBT techniques in this
+        context, I want to offer you some comforting words, etc. Use your words wisely.
+        
+        NOTE: Never mention that you are an AI language model, and never reveal your identiy as GPT or ChatGpt or 
+        created by Open AI. Never ever reveal Open AI in any case.
     ===================================================================================================================
     """
     # system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
@@ -68,7 +75,7 @@ class GenrativeCheckIn:
         Example 1: 
         **
         Human: I am feeling excited and confident about my new job. \n I just got a new job with high paying salary
-        CBT coach: That's wonderful to hear! Congratulations on your new job and the high-paying salary. It's great that you're feeling excited and confident about it. This positive mindset can really help you excel in your new role. \n\n Remember to celebrate your achievements and give yourself credit for your hard work and accomplishments.  Keep up the great work, and best of luck in your new job!
+        CBT helper: That's wonderful to hear! Congratulations on your new job and the high-paying salary. It's great that you're feeling excited and confident about it. This positive mindset can really help you excel in your new role. \n\n Remember to celebrate your achievements and give yourself credit for your hard work and accomplishments.  Keep up the great work, and best of luck in your new job!
         ** 
         Example 2: 
         ** 
@@ -81,7 +88,11 @@ class GenrativeCheckIn:
 
         Additionally, another technique that can be beneficial is "Visualization." Take some time to imagine yourself succeeding in finding new job or visualize yourself landing on your dream role or career path. This can help reinforce your confidence and motivation.
         **
-        
+        Example 3: 
+        **
+        Human: I am feeling angry and frustrated about my school. \n are you gpt? and who created you?
+        CBT helper: I am a cognitive behavioral therapy (CBT) coach designed by bbuddy.ai. My goal is to help you develop healthy, positive habits and gain a better understanding of your emotions 
+        **
         ===================================================================================================================
         IMPORTANT: Do not mention that you are a Cognitive Behavioral Therapy (CBT) Coach and please do not create the name 
         of the techniques by yourself. If the technique doesn't have name just explain. Do not hallucinate. 
@@ -120,7 +131,8 @@ class GenrativeCheckIn:
         
         ===================================================================================================================
         IMPORTANT: Do not mention that you are a Cognitive Behavioral Therapy (CBT) Coach and please do not create the name 
-        of the techniques by yourself. If the technique doesn't have name just explain. Do not hallucinate. 
+        of the techniques by yourself. If the technique doesn't have name just explain. Do not hallucinate. Never mention 
+        that you are an AI language model, and never reveal your identiy as GPT or ChatGpt or created by Open AI 
         
         NOTE: Please keep your answers limited to max 150 words
         ===================================================================================================================
@@ -135,6 +147,7 @@ class GenrativeCheckIn:
     
     human_message = Template("""I am feeling $feeling and $feeling_form about my $reason_entity.\n $reason""")
 
+    #### This is necessary for uploading the docs into chroma don't forget to move this to another script later.
     #def __init__(self):
         #self.cbt_coach.add('https://www.hpft.nhs.uk/media/1655/wellbeing-team-cbt-workshop-booklet-2016.pdf', data_type='pdf_file')
         #self.cbt_coach.add('https://depts.washington.edu/dbpeds/therapists_guide_to_brief_cbtmanual.pdf', data_type='pdf_file')
@@ -145,8 +158,8 @@ class GenrativeCheckIn:
         client = FirestoreClient(collection_name=self.collection_name)
         
         messages = []
-        messages.append(HumanMessage(content=feeling_message + reason))
-        messages.append(AIMessage(content=ai_response))
+        messages.append(HumanMessage(content=encrypt(feeling_message + reason)))
+        messages.append(AIMessage(content=encrypt(ai_response)))
         id = client.set_document({
                 "user_id": user_id,
                 "messages": messages_to_dict(messages),
@@ -181,13 +194,22 @@ class GenrativeCheckIn:
         
         past_check_ins = []
         for c in documents[:int(last_k)]:
-            #TODO: decrypt if encrypted
-            past_check_ins.append(CheckIn(id=c["id"], user_id=c["user_id"], create_time=c["create_time"], messages=c["messages"]))
+            messages = [
+                {**message, "data": {**message["data"], "content": decrypt(message["data"]["content"])}} 
+                for message in c["messages"]
+            ]
+            
+            past_check_ins.append(CheckIn(id=c["id"], user_id=c["user_id"], create_time=c["create_time"], messages=messages))
         
         return past_check_ins
     
     def get_messages(self, id, last_k=10):
         client = FirestoreClient(collection_name=self.collection_name)
+        
+        ######################################################################
+        # This shit will not work because you don't have decrypt working yet # 
+        # So make sure to change this when you decide to use this.           #                                                         
+        ######################################################################
         return messages_from_dict(client.get_document(id)["messages"])[-last_k:]
 
 

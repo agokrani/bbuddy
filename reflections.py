@@ -10,7 +10,7 @@ from langchain.schema import (
 )
 from checkins import GenrativeCheckIn
 from db.firestore_client import FirestoreClient
-from schema.reflection import AIInsight, HumanInsight, Reflection, ReflectionPerTopic, reflection_to_dict, reflections_from_dict
+from schema.reflection import AIInsight, HumanInsight, Reflection, ReflectionPerTopic, encrypt_reflection, reflection_to_dict, reflections_from_dict, decrypt_reflection
 from langchain.schema import messages_from_dict
 
 class MoodReflectionAgent: 
@@ -58,12 +58,7 @@ class MoodReflectionAgent:
         human_messages = []
         for c in history: 
             human_messages.append(list(filter(lambda message: isinstance(message, HumanMessage), messages_from_dict(c.messages)))[0])
-        #history = PostgresChatMessageHistory(
-        #    connection_string=postgres_connection,
-        #    session_id = session_id
-        #)
-
-        #human_messages = list(filter(lambda message: isinstance(message, HumanMessage), history.messages))[-last_k:]
+        
         mood_observations = "\n".join([message.content for message in human_messages]) 
         
         return mood_observations
@@ -115,9 +110,10 @@ class MoodReflectionAgent:
 
     def store(self, reflection_to_add: Reflection, user_id: str):
         client = FirestoreClient(collection_name=self.collection_name)
+        encrypted_reflection = encrypt_reflection(reflection_to_add)
         client.set_document({
                 "user_id": user_id,
-                "reflection": reflection_to_dict(reflection_to_add),
+                "reflection": reflection_to_dict(encrypted_reflection),
                 "create_time": datetime.now(),
         })
         
@@ -138,10 +134,10 @@ class MoodReflectionAgent:
                     filtered_documents.append(doc)
 
             filtered_documents = sorted(filtered_documents, key=lambda doc: doc.get('create_time', datetime.min), reverse=True)
-            history = reflections_from_dict([doc["reflection"] for doc in filtered_documents])
+            history = reflections_from_dict([decrypt_reflection(doc["reflection"]) for doc in filtered_documents])
         else:
             documents = sorted(documents, key=lambda doc: doc.get('create_time', datetime.min), reverse=True)
-            history = reflections_from_dict([doc["reflection"] for doc in documents])
+            history = reflections_from_dict([decrypt_reflection(doc["reflection"]) for doc in documents])
         
         return history
     

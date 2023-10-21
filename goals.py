@@ -8,7 +8,7 @@ from langchain.prompts import (
     PromptTemplate,
 )
 from db.firestore_client import FirestoreClient
-from schema.goal import Milestone, Goal, GoalType, goal_to_dict, goals_from_dict, goal_from_dict
+from schema.goal import Milestone, Goal, GoalType, goal_to_dict, goals_from_dict, goal_from_dict, encrypt_goal, decrypt_goal
 from db.goal_history_manager import GoalHistoryManager
 
 class GoalAgent: 
@@ -23,7 +23,8 @@ class GoalAgent:
         client = FirestoreClient(collection_name=self.collection_name, user_id=user_id)
         
         documents = sorted(client.get_documents(), key=lambda doc: doc.get('create_time', datetime.min), reverse=True)
-        history = goals_from_dict(documents)
+        #print(documents)
+        history = goals_from_dict([decrypt_goal(doc) for doc in documents])
         
         return history
     
@@ -85,14 +86,14 @@ class GoalAgent:
         client = FirestoreClient(collection_name=self.collection_name)
         return client.set_document({
                 "user_id": user_id,
-                "goal": goal_to_dict(goal_to_add),
+                "goal": goal_to_dict(encrypt_goal(goal_to_add)),
                 "create_time": create_time,
         })
 
     def update(self, goal_to_update, user_id: str): 
         client = FirestoreClient(collection_name=self.collection_name)
         client.update_document(document_id=goal_to_update.id, data={
-            "goal":goal_to_dict(goal_to_update)
+            "goal":goal_to_dict(encrypt_goal(goal_to_update))
         })
 
     def delete(self, goal_id: str, user_id: str): 
@@ -103,7 +104,7 @@ class GoalAgent:
         client = FirestoreClient(collection_name=self.collection_name, user_id=user_id)
         
         doc = client.get_document(goal_id)
-        goal = goal_from_dict(doc)
+        goal = goal_from_dict(decrypt_goal(doc))
         
         return goal
 goal_agent = GoalAgent()

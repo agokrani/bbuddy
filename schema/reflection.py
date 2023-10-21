@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List
+from utils.encryption import encrypt, decrypt
 
 class BaseInsight(BaseModel):
     content: str
@@ -54,3 +55,30 @@ def reflection_from_dict(reflection_dict: dict):
 
 def reflections_from_dict(reflections): 
     return [reflection_from_dict(r) for r in reflections]
+
+def encrypt_reflection(reflection): 
+    heading = encrypt(reflection.heading)
+    topic_reflections = []
+    for tr in reflection.topic_reflections: 
+        topic = encrypt(tr.topic)
+        human_insight = HumanInsight(content=encrypt(tr.human_insight.content))
+        ai_insights = []
+        for ai_insight in tr.ai_insights: 
+            ai_insights.append(AIInsight(content=encrypt(ai_insight.content)))
+        topic_reflections.append(ReflectionPerTopic(topic=topic, human_insight=human_insight, ai_insights=ai_insights))
+    
+    return Reflection(heading=heading, topic_reflections=topic_reflections)
+
+
+def decrypt_reflection(encrypted_reflection_dict):
+    return {
+        "heading": decrypt(encrypted_reflection_dict["heading"]),
+        "topic_reflections": [
+            {
+                "ai_insights": [{"content": decrypt(ai["content"])} for ai in tr["ai_insights"]],
+                "human_insight": {"content": decrypt(tr["human_insight"]["content"])},
+                "topic": decrypt(tr["topic"])
+            } for tr in encrypted_reflection_dict["topic_reflections"]
+        ]
+    }
+

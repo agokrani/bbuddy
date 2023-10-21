@@ -82,7 +82,7 @@ class CheckinWebsocketConnection(WebsocketConnection):
         # TODO: change this prompt w.r.t memory if there is a chat history
         def run_blocking_code(user_message):
             vDb = vClient.get_db()
-            context = vDb.query(input_query=user_message, n_results=2, where=None, skip_embedding=False)
+            context = vDb.query(input_query=user_message, n_results=1, where=None, skip_embedding=False)
             return context
 
         while True:
@@ -90,8 +90,6 @@ class CheckinWebsocketConnection(WebsocketConnection):
                 input_json = await self.websocket.receive_json()
                 json2query = kwargs["json2query"]
                 user_message = json2query(input_json['feeling'], input_json['feeling_form'], input_json['reason_entity'], input_json['reason'])
-                
-                print(user_message)
                 
                 await self.websocket.send_json(
                     WebsocketResponse(

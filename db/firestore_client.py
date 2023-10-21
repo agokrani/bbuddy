@@ -23,11 +23,6 @@ class FirestoreClient:
             firebase_admin.initialize_app()
         
         self.firestore_client = firestore.Client()
-        # if self.user_id is not None:
-        #     self.collection = self.firestore_client.collection(
-        #         self.collection_name
-        #     ).where("user_id", "==", self.user_id)
-        # else: 
         self.collection = self.firestore_client.collection(
             self.collection_name
         )
