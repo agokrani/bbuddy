@@ -108,7 +108,7 @@ class CheckinWebsocketConnection(WebsocketConnection):
                 
                 
                 context = await asyncio.to_thread(run_blocking_code,user_message)
-                await self.chain_executor({"query": user_message, "context": context})
+                output = await self.chain_executor({"query": user_message, "context": context})
                 await self.websocket.send_json(
                     WebsocketResponse(
                         sender=Sender.BOT,
@@ -116,6 +116,7 @@ class CheckinWebsocketConnection(WebsocketConnection):
                         message_type=MessageType.END,
                     ).dict()
                 )
+                
             except WebSocketDisconnect:
                 #logger.debug("client disconnected.")
                 break
