@@ -23,7 +23,7 @@ async def goal_chat_endpoint(goal_id: str, websocket: WebSocket, authorization: 
 @langchain_router.get("/chat_history/{goal_id}")
 async def get_chat_history(goal_id: str, page: int, page_size: int):
 
-    history = FirestoreChatMessageHistory(session_id=str(goal_id), user_id=str(goal_id), collection_name="test_store")
+    history = FirestoreChatMessageHistory(session_id=str(goal_id), user_id=str(goal_id), collection_name="goal_chat")
 
     async def chat_message_generator():
        all_messages = history.messages[::-1]
