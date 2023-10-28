@@ -1,30 +1,22 @@
+from datetime import datetime
 import json 
-from typing import List
 from langchain.llms import OpenAI
 from langchain import LLMChain
-from langchain.chat_models import ChatOpenAI
-#from langchain.callbacks.base import CallbackManager
-#from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import (
-    ChatPromptTemplate,
     PromptTemplate,
-    SystemMessagePromptTemplate,
-    AIMessagePromptTemplate,
-    HumanMessagePromptTemplate,
 )
-from langchain.memory.summary import SummarizerMixin
 from langchain.schema import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage
+    HumanMessage
 )
-from langchain.memory import PostgresChatMessageHistory
-from db.reflection_history_manager import ReflectionHistoryManager
-from schema.reflection import AIInsight, HumanInsight, ReflectionPerTopic
+from checkins import GenrativeCheckIn
+from db.firestore_client import FirestoreClient
+from schema.reflection import AIInsight, HumanInsight, Reflection, ReflectionPerTopic, encrypt_reflection, reflection_to_dict, reflections_from_dict, decrypt_reflection
+from langchain.schema import messages_from_dict
 
 class MoodReflectionAgent: 
     llm = OpenAI(temperature=0)
     verbose = True
+    collection_name = "reflections"
     
     def chain(self, prompt):
         return LLMChain(llm=self.llm, prompt=prompt, verbose=self.verbose)
@@ -44,35 +36,35 @@ class MoodReflectionAgent:
         return json.loads(response)
 
 
-    def get_topics_of_reflection(self, session_id, postgres_connection, last_k = 3): 
-        observations = self._get_mood_observations(session_id, postgres_connection)
+    def get_topics_of_reflection(self, user_id:str, last_k = 3): 
+        observations = self._get_mood_observations(user_id=user_id, last_k=last_k)
         
         prompt = PromptTemplate.from_template(
             "{observations}\n\n"
             + "Given only the information above, what are the two most salient"
             + " high-level questions we can ask about the human in"
-            + " the statements to let him reflect back on his day? The question should be deep and reflective"
-            + "Ouput should contain two questions and only questions"
+            + " the statements to let him reflect back on his day? The question should be deep and reflective \n\n"
+            + "Ouput should contain two questions and only questions\n"
             + "Output Format: JSON with key questions containing list of questions"
         )
+        
         response = self.chain(prompt).run(observations=observations)
-
+        
         return json.loads(response)
 
-
-    def _get_mood_observations(self, session_id, postgres_connection, last_k = 3):  
-        history = PostgresChatMessageHistory(
-            connection_string=postgres_connection,
-            session_id = session_id
-        )
-
-        human_messages = list(filter(lambda message: isinstance(message, HumanMessage), history.messages))[-last_k:]
+    # TODO: Change this to firestore with correct dependencies 
+    def _get_mood_observations(self, user_id, last_k=3):  
+        history = GenrativeCheckIn().get_history(user_id=user_id, last_k=last_k)
+        human_messages = []
+        for c in history: 
+            human_messages.append(list(filter(lambda message: isinstance(message, HumanMessage), messages_from_dict(c.messages)))[0])
+        
         mood_observations = "\n".join([message.content for message in human_messages]) 
         
         return mood_observations
 
-    def _get_insights_on_topic(self, topic, session_id, postgres_connection, user_reflection='', last_k = 3): 
-        related_statements = self._get_mood_observations(session_id, postgres_connection)
+    def _get_insights_on_topic(self, topic, user_id, user_reflection='', last_k=3): 
+        related_statements = self._get_mood_observations(user_id=user_id, last_k=last_k)
         if (user_reflection is not None) or (user_reflection != ''):
             prompt = PromptTemplate.from_template(
                 "Statements about {topic}\n"
@@ -108,28 +100,49 @@ class MoodReflectionAgent:
         
         return topic_reflection
 
-    def reflect(self, topics, user_reflections, session_id, postgres_connection, last_k = 3):
+    def reflect(self, topics, user_reflections, user_id:str, last_k = 3):
         reflections = []
         
         for topic, user_reflection in zip(topics, user_reflections): 
-            reflections.append(self._get_insights_on_topic(topic, session_id, postgres_connection, user_reflection))
+            reflections.append(self._get_insights_on_topic(topic, user_id, user_reflection, last_k=last_k))
         
         return reflections
-            
-    def store_reflection(self, db, session_id, reflection_to_add: List[ReflectionPerTopic]): 
-        history = ReflectionHistoryManager(
-            session_id = session_id
-        )
 
-        history.add_reflection(db, reflection_to_add)
-
-    def get_reflection_history(self, db, session_id: str, start_date=None, end_date=None):
-        history = ReflectionHistoryManager(
-            session_id = session_id
-        )
-        return history.reflection_history(db, start_date=start_date, end_date=end_date)
-
-    def count_reflections(self, db, session_id: str): 
-        history = self.get_reflection_history(db, session_id)
+    def store(self, reflection_to_add: Reflection, user_id: str):
+        client = FirestoreClient(collection_name=self.collection_name)
+        encrypted_reflection = encrypt_reflection(reflection_to_add)
+        client.set_document({
+                "user_id": user_id,
+                "reflection": reflection_to_dict(encrypted_reflection),
+                "create_time": datetime.now(),
+        })
         
-        return len(history)
+    def get_history(self, user_id: str, start_date=None, end_date=None):
+        client = FirestoreClient(collection_name=self.collection_name, user_id=user_id)
+        documents = client.get_documents()
+        
+        if start_date is not None and start_date != '':
+            start_date = datetime.strptime(start_date, "%Y-%m-%d")
+        if end_date is not None and end_date != '':
+            end_date = datetime.strptime(end_date, "%Y-%m-%d")
+        
+        if (start_date is not None and start_date != '') or (end_date is not None and end_date != ''):
+            filtered_documents = []
+            for doc in documents:
+                create_time = doc.get('create_time', datetime.min)
+                if (start_date is None or create_time >= start_date) and (end_date is None or create_time <= end_date):
+                    filtered_documents.append(doc)
+
+            filtered_documents = sorted(filtered_documents, key=lambda doc: doc.get('create_time', datetime.min), reverse=True)
+            history = reflections_from_dict([decrypt_reflection(doc["reflection"]) for doc in filtered_documents])
+        else:
+            documents = sorted(documents, key=lambda doc: doc.get('create_time', datetime.min), reverse=True)
+            history = reflections_from_dict([decrypt_reflection(doc["reflection"]) for doc in documents])
+        
+        return history
+    
+    def get_count(self, user_id: str): 
+        client = FirestoreClient(collection_name=self.collection_name, user_id=user_id)
+        documents = client.get_documents()
+        
+        return len(documents)

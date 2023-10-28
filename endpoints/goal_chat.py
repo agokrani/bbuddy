@@ -1,32 +1,29 @@
-from fastapi import APIRouter, WebSocket, Depends
+from fastapi import APIRouter, WebSocket
 from custom_websockets.custom import CustomWebsocketConnection
-from db.goal_history_manager import GoalHistoryManager
-from deps import get_db, connection_string
 from langchain.memory.chat_message_histories import FirestoreChatMessageHistory
 from agents import GoalConversationAgent
 from lanarky.callbacks import AsyncLLMChainWebsocketCallback
 from langchain.schema import messages_to_dict
-from schema.message import messages_from_dict
 from fastapi import Query
 from endpoints import login
-
+from goals import goal_agent
 langchain_router = APIRouter()
 
 
 @langchain_router.websocket("/ws/{goal_id}")
-async def goal_chat_endpoint(goal_id: int, websocket: WebSocket, authorization: str = Query(..., alias="authorization"), db=Depends(get_db)):
-    currentUser = await login.get_current_user(db=db, token=authorization)
-    goal = GoalHistoryManager.get_goal_by_id(db, goal_id)
-    chain = GoalConversationAgent().get_agent(goal, currentUser.id)
+async def goal_chat_endpoint(goal_id: str, websocket: WebSocket, authorization: str = Query(..., alias="authorization")):
+    user_id = login.get_firebase_user(token=authorization)
+    goal = goal_agent.get_by_id(goal_id=goal_id)
+    chain = GoalConversationAgent().get_agent(goal, user_id=user_id)
     
     connection = CustomWebsocketConnection.from_chain(chain=chain, websocket=websocket, callback=AsyncLLMChainWebsocketCallback)
     await connection.connect()
 
 
 @langchain_router.get("/chat_history/{goal_id}")
-async def get_chat_history(goal_id: int, page: int, page_size: int):
+async def get_chat_history(goal_id: str, page: int, page_size: int):
 
-    history = FirestoreChatMessageHistory(session_id=str(goal_id), user_id=str(goal_id), collection_name="test_store")
+    history = FirestoreChatMessageHistory(session_id=str(goal_id), user_id=str(goal_id), collection_name="goal_chat")
 
     async def chat_message_generator():
        all_messages = history.messages[::-1]

@@ -19,7 +19,7 @@ class GoalConversationAgent:
         #memory = ConversationSummaryBufferMemory(llm=self.llm, ai_prefix=coach_name, human_prefix=user_name, memory_key="conversation_history", max_token_limit=1000, chat_memory=message_history)
         #memory = ConversationSummaryMemory(llm=self.llm, memory_key="conversation_history", summarize_step=5, chat_memory=message_history)
         
-        message_history = FirestoreChatMessageHistory(session_id=str(goal.id), user_id=str(user_id), collection_name="test_store")
+        message_history = FirestoreChatMessageHistory(session_id=str(goal.id), user_id=str(user_id), collection_name="goal_chat")
         memory = ConversationBufferWindowMemory(ai_prefix=coach_name, human_prefix=user_name, memory_key="conversation_history", chat_memory=message_history)
         chain = GoalConversationChain.from_llm_and_goal(llm=self.llm, goal=goal, coach_name=coach_name, user_name=user_name, memory=memory)        
         
