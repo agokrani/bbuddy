@@ -1,0 +1,62 @@
+version: '3'
+
+services:
+  backend:
+    container_name: "backend"
+    build:
+      context: .
+      dockerfile: /home/amaan_gokrani/bbuddy-ai/bbuddy.backend/Dockerfile
+    hostname: backend
+    ports: 
+      - '8000:8000'
+        #depends_on:
+        #- nginx
+    volumes:
+      - ./serviceAccountKey.json:/app/serviceAccountKey.json
+        #- ./bbuddy.backend/nginx/default.conf:/etc/nginx/conf.d/api.conf
+        #- ./bbuddy.backend/certs/api.bbuddy.ai:/etc/letsencrypt/live/api.bbuddy.ai
+    environment:
+      #OPENAI_API_KEY: "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"
+      GOOGLE_APPLICATION_CREDENTIALS: "/app/serviceAccountKey.json"
+      OPENAI_API_KEY: "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"
+      FERNET_KEY: "HT3O5cIM6M3WvFO4G8Lw-6Y2Yq-ax_pFFL-EL7cfW0M="
+  
+  web:
+    container_name: "web"
+    build:
+      context: .
+      #dockerfile: /home/amaan_gokrani/bbuddy-ai/bbuddy-website-react/Dockerfile
+      dockerfile: /home/amaan_gokrani/bbuddy-ai/bbuddy-next-website/Dockerfile
+    ports:
+      - '3000:3000'
+    
+  nginx:
+    container_name: "nginx"
+    image: nginx:alpine
+    ports: 
+      - 80:80
+      - 443:443
+    depends_on: 
+      - backend
+    volumes: 
+      - ./nginx:/etc/nginx/conf.d
+      - ./certs/api.bbuddy.ai:/etc/letsencrypt/live/api.bbuddy.ai
+      - ./certs/bbuddy.ai:/etc/letsencrypt/live/bbuddy.ai
+        
+        
+        
+        
+        
+        #nginx:
+      #build:
+      #context: .
+      #dockerfile: Dockerfile
+      #ports:
+      #- '80:80'
+      #- '443:443'
+        #depends_on: 
+    #  - "backend"
+    #volumes:
+            #- ./html:/var/www/html
+            #- ./bbuddy.backend/certs/api.bbuddy.ai:/etc/letsencrypt/live/api.bbuddy.ai
+            # - ./bbuddy-website-react/certs/bbuddy.ai:/etc/letsencrypt/live/bbuddy.ai
